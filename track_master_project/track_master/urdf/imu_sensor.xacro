@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Include the parameters file -->
+  <xacro:include filename="$(find track_master)/urdf/robot_parameters.xacro" />
+
+  <!-- IMU link -->
+  <material name="vert">
+    <color rgba="0.0 1.0 0.0 1.0"/>
+  </material>
+  <!-- Joint between base_link and imu_link -->
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="${imu_pos_x} ${imu_pos_y} ${imu_pos_z}"/>
+  </joint>
+
+  <link name="imu_link">
+    <visual>
+      <geometry>
+        <box size="0.03 0.01 0.005"/>
+      </geometry>
+    </visual>
+    <origin xyz="${imu_pos_x} ${imu_pos_y} ${imu_pos_z}"/>
+  </link>
+
+  <!-- IMU sensor in Gazebo -->
+  <gazebo reference="imu_link">
+    <material>
+      Gazebo/Vert
+    </material>
+    <gravity>true</gravity>
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <topic>imu_data</topic>
+      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+        <ros>
+          <remapping>~/out:=/imu</remapping>
+        </ros>
+        <bodyName>imu_link</bodyName>
+        <updateRateHZ>10.0</updateRateHZ>
+        <gaussianNoise>0.01</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>0 0 0</rpyOffset>
+        <frameName>imu_link</frameName>
+        <initial_orientation_as_reference>false</initial_orientation_as_reference>
+      </plugin>
+      <pose>0 0 0 0 0 0</pose>
+    </sensor>
+  </gazebo>
+
+</robot>

@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<library path="diffdrive_arduino">
+  <class name="diffdrive_arduino/DiffDriveArduinoHardwareInterface" type="diffdrive_arduino::DiffDriveArduinoHardwareInterface" base_class_type="hardware_interface::SystemInterface">
+    <description>Hardware interface for differential drive using Boost.Asio for serial communication with Arduino.</description>
+  </class>
+</library>

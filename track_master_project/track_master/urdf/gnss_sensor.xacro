@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Include the parameters file -->
+  <xacro:include filename="$(find track_master)/urdf/robot_parameters.xacro" />
+
+  <!-- GPS link -->
+  <material name="black">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+
+  <!-- Joint between base_link and gps_link -->
+  <joint name="gps_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="gps_link"/>
+    <origin xyz="${gps_pos_x} ${gps_pos_y} ${gps_pos_z}"/>
+  </joint>
+
+  <link name="gps_link">
+    <visual>
+      <geometry>
+        <box size="0.02 0.02 0.02"/>
+      </geometry>
+    </visual>
+    <origin xyz="${gps_pos_x} ${gps_pos_y} ${gps_pos_z}"/>
+  </link>
+
+  <!-- GPS sensor in Gazebo -->
+  <gazebo reference="gps_link">
+    <material>Gazebo/Black</material>
+    <sensor name="gps_sensor" type="gps">
+      <!-- ensure the sensor is active (required) -->
+      <always_on>true</always_on>
+      <update_rate>10</update_rate>
+      <gps>
+        <!-- Noise configuration for position (latitude, longitude, altitude) -->
+        <position_sensing>
+          <noise type="gaussian">
+            <mean>2.0</mean>
+            <stddev>2.0</stddev> <!-- adjust to your desired noise level in meters -->
+          </noise>
+        </position_sensing>
+        <!-- Noise configuration for velocity -->
+        <velocity_sensing>
+          <noise type="gaussian">
+            <mean>2.0</mean>
+            <stddev>1.0</stddev> <!-- adjust to your desired noise level for velocity -->
+          </noise>
+        </velocity_sensing>
+      </gps>
+      <plugin name="gps_plugin" filename="libgazebo_ros_gps_sensor.so">
+        <ros>
+          <!-- publish to /gps/fix -->
+          <namespace>/</namespace>
+          <remapping>~/out:=/gps/fix</remapping>
+          <frameName>map</frameName>
+        </ros>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+</robot>

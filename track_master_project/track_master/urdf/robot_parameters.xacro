@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Parameters for the robot dimensions -->
+  <xacro:property name="chassis_length" value="0.4"/>
+  <xacro:property name="chassis_width" value="0.3"/>
+  <xacro:property name="chassis_height" value="0.03"/>
+
+  <!-- Parameters for rear wheel positions -->
+  <xacro:property name="rear_wheel_radius" value="0.06"/>
+  <xacro:property name="rear_wheel_length" value="0.06"/>
+  <xacro:property name="rear_left_wheel_pos_x" value="-0.10"/>
+  <xacro:property name="rear_right_wheel_pos_x" value="-0.10"/>
+  <xacro:property name="rear_left_wheel_pos_y" value="0.18"/>
+  <xacro:property name="rear_right_wheel_pos_y" value="-0.18"/>
+
+  <!-- Parameters for front wheel positions -->
+  <xacro:property name="front_wheel_radius" value="0.06"/>
+  <xacro:property name="front_wheel_length" value="0.06"/>
+  <xacro:property name="front_left_wheel_pos_x" value="0.10"/>
+  <xacro:property name="front_right_wheel_pos_x" value="0.10"/>
+  <xacro:property name="front_left_wheel_pos_y" value="0.18"/>
+  <xacro:property name="front_right_wheel_pos_y" value="-0.18"/>
+
+  <!-- Parameters for steering limits -->
+  <xacro:property name="steering_limit_lower" value="-0.785"/>
+  <xacro:property name="steering_limit_upper" value="0.785"/>
+
+  <!-- Parameters for sensor positions -->
+  <xacro:property name="gps_pos_x" value="0.05"/>
+  <xacro:property name="gps_pos_y" value="0.0"/>
+  <xacro:property name="gps_pos_z" value="0.0"/>
+
+  <xacro:property name="imu_pos_x" value="0.0"/>
+  <xacro:property name="imu_pos_y" value="0.0"/>
+  <xacro:property name="imu_pos_z" value="0.0"/>
+
+</robot>
