@@ -24,7 +24,7 @@ Track Master is an open-source project designed to develop an autonomous robotic
 ### **Roadmap**
 - **Enhanced Localization**: Incorporate RTK GPS for sub-meter accuracy.
 - **AI Integration**: Add modules for AI-based decision-making and path planning.
-- **Advanced Sensors**: Extend support for lidar and additional IMUs for better mapping.
+- **Advanced Sensors**: Extend support for lidar for better mapping.
 
 ### **Contributing**
 We welcome contributions! Please check our [contribution guidelines](CONTRIBUTING.md) for more details.
