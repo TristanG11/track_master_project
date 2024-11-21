@@ -31,16 +31,18 @@ def parse_vtg(nmea_sentence):
     Parse an NMEA VTG sentence and return a dictionary of the extracted data.
     """
     fields = nmea_sentence.strip().split(',')
+    print(fields)
     
     # Validate sentence format
-    if len(fields) < 9 or not nmea_sentence.startswith('$GPVTG'):
+    if len(fields) < 8 :
         raise ValueError("Invalid VTG sentence: not enough fields")
     
     # Extract data with default handling for missing fields
     true_course = float(fields[1]) if fields[1] else None
     magnetic_course = float(fields[3]) if fields[3] else None
-    speed_knots = float(fields[5]) if fields[5] else 0.0
-    speed_kmh = float(fields[7]) if fields[7] else 0.0
+    speed_knots = float(fields[5]) if fields[5] else None
+    speed_kmh = float(fields[7]) if fields[7] else None
+    
 
     return {
         'true_course': true_course,         # Course relative to true north (degrees)

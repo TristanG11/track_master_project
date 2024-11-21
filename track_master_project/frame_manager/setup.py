@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'map_frame_publisher = frame_manager.map_frame_publisher:main'
         ],
     },
 )

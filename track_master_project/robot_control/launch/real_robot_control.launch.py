@@ -68,10 +68,21 @@ def generate_launch_description():
         )
     )
 
+    map_frame_publisher_node = Node(
+        package='frame_manager',
+        executable='map_frame_publisher',
+        name='map_frame_publisher',
+        output='screen',
+        parameters=[
+            {'use_sim_time': False}  # Set use_sim_time to True if simulation time is used
+        ]
+    )
+
     # Launch them all!
     return LaunchDescription([
         rsp,
         delayed_controller_manager,
         delayed_diff_drive_spawner,
-        delayed_joint_broad_spawner
+        delayed_joint_broad_spawner,
+        map_frame_publisher_node
     ])

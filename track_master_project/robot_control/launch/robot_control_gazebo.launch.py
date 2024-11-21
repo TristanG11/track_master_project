@@ -5,7 +5,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-
+from launch_ros.actions import Node  
 def generate_launch_description():
 
     pkg_name_des = 'track_master'
@@ -32,8 +32,19 @@ def generate_launch_description():
         actions=[robot_control_launch]
     )
 
+    map_frame_publisher_node = Node(
+        package='frame_manager',
+        executable='map_frame_publisher',
+        name='map_frame_publisher',
+        output='screen',
+        parameters=[
+            {'use_sim_time': True}  # Set use_sim_time to True if simulation time is used
+        ]
+    )
+
    
     return LaunchDescription([
         gazebo_launch,
         delayed_robot_control_launch,
+        map_frame_publisher_node
     ])
