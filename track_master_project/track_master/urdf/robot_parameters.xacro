@@ -22,10 +22,6 @@
   <xacro:property name="front_left_wheel_pos_y" value="0.18"/>
   <xacro:property name="front_right_wheel_pos_y" value="-0.18"/>
 
-  <!-- Parameters for steering limits -->
-  <xacro:property name="steering_limit_lower" value="-0.785"/>
-  <xacro:property name="steering_limit_upper" value="0.785"/>
-
   <!-- Parameters for sensor positions -->
   <xacro:property name="gps_pos_x" value="0.05"/>
   <xacro:property name="gps_pos_y" value="0.0"/>

@@ -55,14 +55,25 @@ def generate_launch_description():
                                 '-entity', 'tracker_master_bot'],
                     output='screen')
     
-    #rviz_node = Node(package='rviz2' , executable='rviz2',output='screen')
 
+    
+    # RViz2 visualization
+    rviz_config_path = os.path.join(get_package_share_directory(pkg_name), 'config', 'config.rviz')
+
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d', rviz_config_path],
+        parameters=[{'use_sim_time': True}],
+        output='screen'
+    )
     # Run the node
     return LaunchDescription([
         gazebo,
         node_robot_state_publisher,
         spawn_entity,
         joint_state_publisher_node,
-        #rviz_node
+        rviz_node
     ])
 

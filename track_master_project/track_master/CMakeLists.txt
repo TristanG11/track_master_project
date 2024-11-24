@@ -21,5 +21,7 @@ install(DIRECTORY launch/
 install(DIRECTORY worlds/
   DESTINATION share/${PROJECT_NAME}/worlds
 )
-
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
 ament_package()
