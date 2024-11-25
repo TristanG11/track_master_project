@@ -1,0 +1,12 @@
+joystick:
+  ros__parameters:
+    axis_linear: 4               # Axis for linear speed
+    axis_angular: 3              # Axis for angular speed
+    button_stop: 0               # Button to stop the robot
+    button_start: 2              # Button to resume robot control
+    deadzone_threshold: 0.05     # Threshold for joystick dead zone
+    max_linear_speed: 0.5        # Maximum linear speed
+    min_linear_speed: -0.3       # Minimum linear speed
+    max_angular_speed: 0.5       # Maximum angular speed
+    min_angular_speed: -0.3      # Minimum angular speed
+    cmd_vel_topic: "/cmd_vel"    # Topic to publish the Twist messages

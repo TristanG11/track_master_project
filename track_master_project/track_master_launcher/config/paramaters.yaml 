@@ -1,0 +1,62 @@
+robot_parameters:
+
+  # Kinematics and dynamics
+  max_linear_speed: 1.0  # Maximum linear speed in m/s
+  min_linear_speed: -0.5 # Minimum linear speed in m/s
+  max_angular_speed: 2.0 # Maximum angular speed in rad/s
+  min_angular_speed: -2.0 # Minimum angular speed in rad/s
+  max_linear_acceleration: 0.5  # Maximum linear acceleration in m/s^2
+  max_angular_acceleration: 1.0 # Maximum angular acceleration in rad/s^2
+  wheel_radius: 0.06  # Radius of wheels in meters
+  wheel_base: 0.5    # Distance between front and rear axles in meters
+  track_width: 0.4   # Distance between left and right wheels in meters
+
+  use_sime_time: true
+
+  # Sensors
+  lidar:
+    range_max: 10.0         # Maximum detection range in meters
+    range_min: 0.2          # Minimum detection range in meters
+    scan_frequency: 10.0    # Scan frequency in Hz
+    angle_increment: 0.01   # Angle increment in radians
+
+  camera:
+    resolution: [640, 480]  # Resolution of the camera (width x height in pixels)
+    frame_rate: 30          # Frame rate in FPS
+    field_of_view: 90       # Field of view in degrees
+
+  imu:
+    calibration_file: "/path/to/calibration.yaml" # Path to IMU calibration file
+    data_rate: 100 # IMU data rate in Hz
+
+  gnss:
+    position_accuracy: 0.5  # GNSS position accuracy in meters
+    update_rate: 1.0        # GNSS update rate in Hz
+    module_port = '/dev/ttyUSB0'
+    baudrate = 38400
+
+  # Localization
+  map_frame:
+    anchor_latitude : 45.1884761810328
+    anchor_longitude : 5.758789362472429
+    anchor_altitude : 0.05999328661710024
+    anchor_name : "Saint Martin d'hères"
+
+
+  # Teleop 
+  joystick_deadzone: 0.05 # Deadzone threshold for joystick input
+
+  # Diagnostics
+  diagnostics_update_rate: 1.0 # Frequency of diagnostics update in Hz
+  diagnostics:
+    battery_warning_level: 20  # Battery warning level in %
+    temperature_warning: 75    # Temperature warning level in °C
+
+  # Energy
+  battery:
+    capacity: 5000  # Battery capacity in mAh
+    voltage: 14.8   # Battery voltage in V
+    critical_level: 10  # Battery critical level in %
+
+  motors:
+    power_limit: 10 # Maximum power for each motor in Watts

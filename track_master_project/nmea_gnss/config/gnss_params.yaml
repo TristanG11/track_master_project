@@ -1,0 +1,7 @@
+gnss:
+  port: "/dev/ttyUSB0"
+  baud_rate: 38400
+  correction_topic: "/gnss/correction"
+  use_ntrip: true
+  base_station_ip: "192.168.1.100"
+  base_station_port: 2101
