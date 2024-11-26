@@ -10,7 +10,7 @@ def generate_launch_description():
 
     pkg_name_ctrl = 'robot_control'
 
-    robot_control_gazebo_launch = IncludeLaunchDescription(
+    robot_control_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
                 get_package_share_directory(pkg_name_ctrl), 'launch', 'real_robot_control.launch.py'
@@ -29,6 +29,6 @@ def generate_launch_description():
 
 
     return LaunchDescription([
-        robot_control_gazebo_launch,
+        robot_control_launch,
         joystick_control_node,
     ])

@@ -17,6 +17,8 @@ class DiffDriveArduinoHardwareInterface : public hardware_interface::SystemInter
 {
 public:
   DiffDriveArduinoHardwareInterface();  
+  ~DiffDriveArduinoHardwareInterface() noexcept override = default;
+
   // Initializes the hardware interface with information from the configuration file
   hardware_interface::CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
 
@@ -33,10 +35,11 @@ public:
   hardware_interface::return_type write(const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 private:
+
   rclcpp::Publisher<msg_utils::msg::WheelCommands>::SharedPtr command_publisher_;
   //rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr state_publisher_;
-  std::vector<double> hw_commands_; 
-  std::vector<double> hw_states_;
+  std::map<std::string, double> hw_commands_; 
+  std::map<std::string, std::array<double, 2>> hw_states_;
   boost::asio::io_service io_service_;
   std::unique_ptr<boost::asio::serial_port> serial_port_; 
 };
