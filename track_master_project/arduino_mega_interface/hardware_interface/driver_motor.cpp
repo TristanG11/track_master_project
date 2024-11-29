@@ -2,7 +2,7 @@
 
 // Constructor
 DriverMotor::DriverMotor(uint8_t pinEnable, uint8_t pinCW, uint8_t pinCLK, String id)
-    : Motor(id, AccelStepper::DRIVER), pinEnable_(pinEnable), pinCW_(pinCW), pinCLK_(pinCLK) {}
+    : Motor(id, AccelStepper::DRIVER, pinEnable, pinCW,pinCLK), pinEnable_(pinEnable), pinCW_(pinCW), pinCLK_(pinCLK) {}
 
 // Setup the motor
 void DriverMotor::setup() {

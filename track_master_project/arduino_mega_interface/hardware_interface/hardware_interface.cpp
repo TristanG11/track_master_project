@@ -54,7 +54,7 @@ void HardwareInterface::handleCommand(const String& cmd) {
 
 void HardwareInterface::run(){
   for(auto& motor:motors_){
-    motor.second->run();
+    motor.second->AccelStepper::runSpeed();
   }
 }
 
@@ -64,9 +64,9 @@ void HardwareInterface::feedback() {
     for (auto& [key, motor] : motors_) {
         feedback += key;                    // Append motor ID
         feedback += ',';                    // Separator
-        feedback += motor->getPosition();      // Add speed
+        feedback += motor->currentPosition();      // Add position
         feedback += ',';                    // Separator
-        feedback += motor->getSpeed();   // Add position
+        feedback += motor->speed();   // Add speed
         feedback += ';';                    // End of entry
     }
     // Convert String to C-string (char array)

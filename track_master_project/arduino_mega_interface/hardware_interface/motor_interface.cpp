@@ -1,29 +1,14 @@
 #include "motor_interface.hpp"
 
 // Constructor
-Motor::Motor(String id, uint8_t interfaceType)
-    : AccelStepper(interfaceType), speed_(0.0f), id_(id) {}
 
-// Set motor speed
-void Motor::setSpeed(float speed) {
-    speed_ = speed;
-    AccelStepper::setSpeed(speed_);
-}
+Motor::Motor(String id, uint8_t interface_type, uint8_t IN1,uint8_t IN3, uint8_t IN2, uint8_t IN4):
+AccelStepper(interface_type,IN1,IN3,IN2,IN4),id_(id){}
 
-// Stop the motor
-void Motor::stop() {
-    AccelStepper::stop();
-}
+Motor::Motor(String id, uint8_t interface_type,uint8_t pinEnable, uint8_t pinCW, uint8_t pinCLK):
+AccelStepper(interface_type,pinEnable,pinCW,pinCLK),id_(id){}
 
-// Get current speed
-float Motor::getSpeed() const {
-    return speed_;
-}
-
-// Get current position
-float Motor::getPosition() const {
-    return currentPosition();
-}
+Motor::Motor(String id){}
 
 // Get motor ID
 String Motor::getId() const {
@@ -33,9 +18,4 @@ String Motor::getId() const {
 // Set motor ID
 void Motor::setId(String id) {
     id_ = id;
-}
-
-// Run the motor
-void Motor::run() {
-    AccelStepper::runSpeed();
 }
