@@ -6,10 +6,10 @@ UnipolarMotor::UnipolarMotor(uint8_t IN1, uint8_t IN3, uint8_t IN2, uint8_t IN4,
 
 // Setup the motor
 void UnipolarMotor::setup() {
-    /*pinMode(IN1_, OUTPUT);
+    pinMode(IN1_, OUTPUT);
     pinMode(IN2_, OUTPUT);
     pinMode(IN3_, OUTPUT);
-    pinMode(IN4_, OUTPUT);*/
+    pinMode(IN4_, OUTPUT);
     AccelStepper::setMaxSpeed(1000);             // Set max speed
-    //AccelStepper::setAcceleration(100);         // Set acceleration
+    
 }

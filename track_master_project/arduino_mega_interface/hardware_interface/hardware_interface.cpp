@@ -69,11 +69,8 @@ void HardwareInterface::feedback() {
         feedback += motor->speed();   // Add speed
         feedback += ';';                    // End of entry
     }
-    // Convert String to C-string (char array)
-    //const char* feedbackCStr = feedback.c_str();
+
     Serial.println(feedback);
-    // Use Serial.write to send the raw data
-    //Serial.write(feedbackCStr, feedback.length());
 }
 
 

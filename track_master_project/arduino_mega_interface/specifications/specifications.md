@@ -20,7 +20,6 @@ To control multiple stepper motors via an Arduino Mega using serial commands. Th
 
 3. **Multi-Motor Support**:
    - Manage up to 4 motors (can be extended as needed).
-   - Ensure non-blocking operations for all motors.
 
 ---
 
@@ -28,45 +27,38 @@ To control multiple stepper motors via an Arduino Mega using serial commands. Th
 
 ### **Hardware Requirements**
 1. **Microcontroller**: Arduino Mega 2560.
-2. **Motors**: Stepper motors with drivers like A4988 or DRV8825.
+2. **Motors**: Stepper motors with drivers like A4988 or DRV8825 or Unipolar Motors
 3. **Pin Assignments**:
-   - Each motor requires 3 pins (EN, CW, CLK).
+   - Each motor requires 3 pins (EN, CW, CLK) for driver motors only
+
 
 ### **Software Design**
 
-#### **Motor Class**
+#### **DriverMotor Class**
 A reusable class for controlling individual stepper motors.
 - **Constructor Parameters**:
   - `enablePin`: Pin for enabling/disabling the motor.
   - `cwPin`: Pin for setting the motor direction.
   - `clkPin`: Pin for sending clock pulses.
-- **Methods**:
-  - `setup()`: Initialize the motor pins.
-  - `setSpeed(int speed)`: Set the motor speed.
-  - `moveTo(int position)`: Move the motor to a specific position.
-  - `stop()`: Stop the motor.
 
 #### **MotorsManager Class**
 Manages multiple `Motor` instances and parses commands.
 - **Attributes**:
-  - `Motor motors[]`: Array of `Motor` objects.
+  - ` std::map<String, Motor*> motors_; `: Map of `Motor` objects.
 - **Methods**:
   - `addMotor(Motor motor)`: Add a motor to the system.
   - `processCommand(String command)`: Parse and execute a serial command.
 
 #### **Serial Communication**
-- Baud rate: `9600`.
+- Baud rate: `115200`.
 - Protocol: Simple text commands.
 
 ---
-
 ## Command Details
 
 | Command Format            | Example       | Description                          |
 |---------------------------|---------------|--------------------------------------|
 | `<MOTOR_ID> SPEED <VALUE>`| `1 SPEED 500` | Set motor 1 speed to 500 steps/sec.  |
-| `<MOTOR_ID> POS <VALUE>`  | `2 POS 1000`  | Move motor 2 to position 1000.       |
-| `<MOTOR_ID> STOP`         | `3 STOP`      | Stop motor 3 immediately.            |
 
 ---
 
