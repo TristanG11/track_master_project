@@ -1,4 +1,4 @@
-name: ROS 2 Test Workflow
+name: ROS2 CI Build
 
 on:
   push:
@@ -7,36 +7,36 @@ on:
     branches: [devel]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      # Vérifier le dépôt
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # Installer ROS 2 (Humble, Galactic ou autre selon votre version)
-      - name: Setup ROS 2
-        uses: ros-tooling/setup-ros@v0.3
-        with:
-          distribution: humble # Changez "humble" selon votre distribution
-          include-source-space: false
+    - name: Setup ROS 2
+      uses: ros-tooling/setup-ros@v0.4.0
+      with:
+        required-ros-distributions: humble  # Remplacez par votre distribution ROS2
 
-      # Installer les dépendances ROS 2
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y python3-colcon-common-extensions
-          rosdep update
-          rosdep install --from-paths src --ignore-src -r -y
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install --upgrade empy
+        pip uninstall -y em  # Désinstaller le package `em`
+        pip install --upgrade colcon-common-extensions colcon-core
 
-      # Construire l'espace de travail
-      - name: Build workspace
-        run: |
-          colcon build --event-handlers console_cohesion+ --cmake-args -DCMAKE_BUILD_TYPE=Release
+    - name: Install ROS dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y python3-colcon-common-extensions
 
-      # Exécuter les tests
-      - name: Run tests
-        run: |
-          colcon test --packages-skip frame_manager joystick_control nmea_gnss robot_control
-          colcon test-result --verbose
+    - name: Build workspace
+      run: |
+        colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --event-handlers console_cohesion+
+
+    - name: Run tests
+      run: colcon test --event-handlers console_cohesion+
+
+    - name: Test result summary
+      run: colcon test-result --verbose
