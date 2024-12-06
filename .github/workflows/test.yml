@@ -1,0 +1,42 @@
+name: ROS 2 Test Workflow
+
+on:
+  push:
+    branches: [devel]
+  pull_request:
+    branches: [devel]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Vérifier le dépôt
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Installer ROS 2 (Humble, Galactic ou autre selon votre version)
+      - name: Setup ROS 2
+        uses: ros-tooling/setup-ros@v0.3
+        with:
+          distribution: humble # Changez "humble" selon votre distribution
+          include-source-space: false
+
+      # Installer les dépendances ROS 2
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3-colcon-common-extensions
+          rosdep update
+          rosdep install --from-paths src --ignore-src -r -y
+
+      # Construire l'espace de travail
+      - name: Build workspace
+        run: |
+          colcon build --event-handlers console_cohesion+ --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+      # Exécuter les tests
+      - name: Run tests
+        run: |
+          colcon test
+          colcon test-result --verbose
