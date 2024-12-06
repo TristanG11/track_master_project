@@ -45,5 +45,5 @@ TEST(NmeaParserTest, ValidGGASentence) {
 TEST(NmeaParserTest, InvalidGGASentenceTooFewFields) {
     NmeaParser parser;
     std::string invalid_gga_sentence = "$GPGGA,123519";
-    EXPECT_ANY_THROW(parser.parse_gga(invalid_gga_sentence),std::runtime_error);
+    EXPECT_ANY_THROW(parser.parse_gga(invalid_gga_sentence));
 }

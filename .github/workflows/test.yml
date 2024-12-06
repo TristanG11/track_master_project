@@ -29,7 +29,7 @@ jobs:
     - name: Install ROS dependencies
       run: |
         sudo apt update
-        sudo apt install -y python3-colcon-common-extensions
+        sudo apt install -y python3-colcon-common-extensions ros-humble-ament-cmake
 
     - name: Build workspace
       run: |
