@@ -19,33 +19,18 @@ jobs:
       with:
         required-ros-distributions: humble  
 
-    - name: Install Python dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        pip install --upgrade empy
-        pip uninstall -y em  # Désinstaller le package `em`
-        pip install --upgrade colcon-common-extensions colcon-core
-
-    - name: Install dependencies using rosdep
-      run: |
-        sudo apt update
-        rosdep update
-        rosdep install --from-paths src --ignore-src -r -y
-
     - name: Install ROS dependencies
       run: |
+        sudo apt update
         sudo apt install -y python3-colcon-common-extensions ros-humble-ament-cmake
 
-    - name: Clean workspace
+    - name: Export CMAKE_PREFIX_PATH
       run: |
-        rm -rf build/ install/ log/
-
-    - name: Source ROS
-      run: source /opt/ros/humble/setup.bash
+        echo "CMAKE_PREFIX_PATH=/opt/ros/humble:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
 
     - name: Build workspace
       run: |
-        colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --event-handlers console_cohesion+
+        colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="/opt/ros/humble"
 
     - name: Run tests
       run: colcon test --event-handlers console_cohesion+
