@@ -22,19 +22,26 @@ jobs:
 
       - name: Uninstall conflicting package
         run: |
-          sudo pip uninstall -y em
+          sudo pip uninstall -y em || true
+          find /usr/local/bin/ -name "em.py" -exec sudo rm -f {} +
+          find /usr/local/lib/python3.10/ -name "em.py" -exec sudo rm -f {} +
 
       - name: Install empy package
         run: |
           pip install empy
+
+      - name: Verify installed packages
+        run: pip list | grep -E 'em|empy'
 
       - name: Install additional dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-colcon-common-extensions
 
-      - name: Verify installed packages
-        run: pip list | grep -E 'em|empy'
+      - name: Clean Python cache
+        run: |
+          find . -name "*.pyc" -delete
+          find . -name "__pycache__" -delete
 
       - name: Install ROS 2 dependencies
         run: |
@@ -47,7 +54,7 @@ jobs:
 
       - name: Verify installed packages again
         run: pip list | grep -E 'em|empy'
-        
+
       - name: Build the workspace
         run: |
           colcon build 
