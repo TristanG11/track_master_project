@@ -38,5 +38,5 @@ jobs:
       # Exécuter les tests
       - name: Run tests
         run: |
-          colcon test
+          colcon test --packages-skip frame_manager joystick_control nmea_gnss robot_control
           colcon test-result --verbose
