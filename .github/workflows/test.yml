@@ -24,10 +24,13 @@ jobs:
         run: |
           sudo pip uninstall -y em
 
+      - name: Install empy package
+        run: |
+          pip install empy
+
       - name: Install additional dependencies
         run: |
           sudo apt-get update
-          pip install empy
           sudo apt-get install -y python3-colcon-common-extensions
 
       - name: Verify installed packages
