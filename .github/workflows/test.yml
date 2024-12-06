@@ -1,38 +1,42 @@
-name: ROS2 CI Workflow
+name: ROS2 CI Build
 
 on:
   push:
-    branches:
-      - devel
+    branches: [devel]
   pull_request:
-    branches:
-      - devel
+    branches: [devel]
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Setup ROS 2
-        uses: ros-tooling/setup-ros@v0.2
-        with:
-          required-ros-distributions: humble
+    - name: Setup ROS 2
+      uses: ros-tooling/setup-ros@v0.3
+      with:
+        required-ros-distributions: humble  
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install python3-colcon-common-extensions -y
-          rosdep update
-          rosdep install --from-paths src --ignore-src -r -y
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install --upgrade empy
+        pip uninstall -y em  # Désinstaller le package `em`
+        pip install --upgrade colcon-common-extensions colcon-core
 
-      - name: Build packages
-        run: |
-          colcon build --event-handlers console_direct+
+    - name: Install ROS dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y python3-colcon-common-extensions ros-humble-ament-cmake
 
-      - name: Run tests
-        run: |
-          colcon test --event-handlers console_direct+
-          colcon test-result --verbose
+    - name: Build workspace
+      run: |
+        colcon build 
+
+    - name: Run tests
+      run: colcon test --event-handlers console_cohesion+
+
+    - name: Test result summary
+      run: colcon test-result --verbose
