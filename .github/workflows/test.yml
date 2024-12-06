@@ -23,7 +23,6 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         pip install --upgrade empy
-        pip uninstall -y em  # Désinstaller le package `em`
         pip install --upgrade colcon-common-extensions colcon-core
 
     - name: Install ROS dependencies
@@ -33,10 +32,15 @@ jobs:
 
     - name: Build workspace
       run: |
+        source /opt/ros/humble/setup.bash
         colcon build --continue-on-error
 
     - name: Run tests
-      run: colcon test --event-handlers console_cohesion+
+      run: |
+        source /opt/ros/humble/setup.bash
+        colcon test --event-handlers console_cohesion+
 
     - name: Test result summary
-      run: colcon test-result --verbose
+      run: |
+        source /opt/ros/humble/setup.bash
+        colcon test-result --verbose
