@@ -23,6 +23,8 @@ jobs:
       - name: Install additional dependencies
         run: |
           sudo apt-get update
+          pip uninstall em
+          pip install empy
           sudo apt-get install -y python3-colcon-common-extensions
 
       - name: Install ROS 2 dependencies
