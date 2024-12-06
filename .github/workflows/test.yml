@@ -40,11 +40,14 @@ jobs:
         run: |
           rosdep update
           rosdep install --from-paths src --ignore-src -r -y
-
+      
       - name: Clean workspace
         run: |
           rm -rf build install log
 
+      - name: Verify installed packages again
+        run: pip list | grep -E 'em|empy'
+        
       - name: Build the workspace
         run: |
           colcon build 
