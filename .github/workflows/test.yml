@@ -10,16 +10,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup ROS 2 Humble
+      - name: Setup ROS 2
         uses: ros-tooling/setup-ros@v0.2
         with:
-          distro: humble
+          required-ros-distributions: humble
 
       - name: Install dependencies
         run: |
