@@ -1,4 +1,4 @@
-name: ROS2 CI
+name: GTest CI
 
 on:
   push:
@@ -9,57 +9,29 @@ on:
       - devel
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup ROS 2
-        uses: ros-tooling/setup-ros@v0.3
-        with:
-          distribution: humble
-
-      - name: Uninstall conflicting package
-        run: |
-          sudo pip uninstall -y em || true
-          find /usr/local/bin/ -name "em.py" -exec sudo rm -f {} +
-          find /usr/local/lib/python3.10/ -name "em.py" -exec sudo rm -f {} +
-
-      - name: Install empy package
-        run: |
-          pip install empy
-
-      - name: Verify installed packages
-        run: pip list | grep -E 'em|empy'
-
-      - name: Install additional dependencies
+      - name: Install build tools and dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-colcon-common-extensions
+          sudo apt-get install -y cmake build-essential libgtest-dev
 
-      - name: Clean Python cache
+      - name: Build Google Test
         run: |
-          find . -name "*.pyc" -delete
-          find . -name "__pycache__" -delete
+          cd /usr/src/gtest
+          sudo cmake .
+          sudo make
+          sudo mv libg* /usr/lib/
 
-      - name: Install ROS 2 dependencies
+      - name: Build and run test for nmea_gnss_cpp
         run: |
-          rosdep update
-          rosdep install --from-paths src --ignore-src -r -y
-      
-      - name: Clean workspace
-        run: |
-          rm -rf build install log
-
-      - name: Verify installed packages again
-        run: pip list | grep -E 'em|empy'
-
-      - name: Build the workspace
-        run: |
-          colcon build 
-
-      - name: Run tests
-        run: |
-          colcon test --event-handlers console_cohesion+
-          colcon test-result
+          cd src/nmea_gnss_cpp
+          mkdir -p build
+          cd build
+          cmake ..
+          make
+          ctest --output-on-failure
