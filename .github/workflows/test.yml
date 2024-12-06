@@ -1,39 +1,38 @@
-name: ROS2 CI Build
+name: ROS2 CI Workflow
 
 on:
   push:
-    branches: [devel]
+    branches:
+      - main
   pull_request:
-    branches: [devel]
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Setup ROS 2
-      uses: ros-tooling/setup-ros@v0.3
-      with:
-        required-ros-distributions: humble  
+      - name: Setup ROS 2 Humble
+        uses: ros-tooling/setup-ros@v0.2
+        with:
+          distro: humble
 
-    - name: Install ROS dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y python3-colcon-common-extensions ros-humble-ament-cmake
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install python3-colcon-common-extensions -y
+          rosdep update
+          rosdep install --from-paths src --ignore-src -r -y
 
-    - name: Export CMAKE_PREFIX_PATH
-      run: |
-        echo "CMAKE_PREFIX_PATH=/opt/ros/humble:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
+      - name: Build packages
+        run: |
+          colcon build --event-handlers console_direct+
 
-    - name: Build workspace
-      run: |
-        colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="/opt/ros/humble"
-
-    - name: Run tests
-      run: colcon test --event-handlers console_cohesion+
-
-    - name: Test result summary
-      run: colcon test-result --verbose
+      - name: Run tests
+        run: |
+          colcon test --event-handlers console_direct+
+          colcon test-result --verbose
