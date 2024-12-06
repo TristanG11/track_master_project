@@ -23,8 +23,8 @@ jobs:
       run: |
         sudo apt-get update
         pip uninstall -y em
-        sudo apt-get install -y python3-colcon-common-extensions ros-humble-ament-cmake python3-empy
-
+        pip install empy
+        sudo apt-get install -y python3-colcon-common-extensions ros-humble-ament-cmake 
     - name: Install Gazebo and ROS Gazebo Packages
       run: |
         sudo apt-get update
