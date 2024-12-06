@@ -26,10 +26,22 @@ jobs:
         pip uninstall -y em  # Désinstaller le package `em`
         pip install --upgrade colcon-common-extensions colcon-core
 
-    - name: Install ROS dependencies
+    - name: Install dependencies using rosdep
       run: |
         sudo apt update
+        rosdep update
+        rosdep install --from-paths src --ignore-src -r -y
+
+    - name: Install ROS dependencies
+      run: |
         sudo apt install -y python3-colcon-common-extensions ros-humble-ament-cmake
+
+    - name: Clean workspace
+      run: |
+        rm -rf build/ install/ log/
+
+    - name: Source ROS
+      run: source /opt/ros/humble/setup.bash
 
     - name: Build workspace
       run: |
