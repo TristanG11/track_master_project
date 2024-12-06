@@ -47,7 +47,7 @@ jobs:
 
       - name: Build the workspace
         run: |
-          colcon build --event-handlers console_cohesion+
+          colcon build 
 
       - name: Run tests
         run: |
