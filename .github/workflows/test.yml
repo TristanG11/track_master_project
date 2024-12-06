@@ -8,16 +8,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Setup ROS 2
-      uses: ros-tooling/setup-ros@v0.4.0
+      uses: ros-tooling/setup-ros@v0.3
       with:
-        required-ros-distributions: humble  # Remplacez par votre distribution ROS2
+        required-ros-distributions: humble  
 
     - name: Install Python dependencies
       run: |
