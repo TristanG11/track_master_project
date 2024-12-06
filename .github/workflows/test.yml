@@ -21,14 +21,13 @@ jobs:
 
     - name: Install Python dependencies
       run: |
-        python3 -m pip install --upgrade pip
-        pip install --upgrade empy
-        pip install --upgrade colcon-common-extensions colcon-core
+        sudo apt-get update
+        sudo apt-get install -y python3-colcon-common-extensions ros-humble-ament-cmake python3-empy
 
-    - name: Install ROS dependencies
+    - name: Install Gazebo and ROS Gazebo Packages
       run: |
-        sudo apt update
-        sudo apt install -y python3-colcon-common-extensions ros-humble-ament-cmake
+        sudo apt-get update
+        sudo apt-get install -y ros-humble-gazebo-ros-pkgs
 
     - name: Build workspace
       run: |
