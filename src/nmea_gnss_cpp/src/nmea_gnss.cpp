@@ -3,11 +3,24 @@
 #include <sstream>
 
 NmeaGnssNode::NmeaGnssNode()
-    : Node("nmea_gnss_node"), serial_port_name_("/dev/ttyUSB0"), baud_rate_(38400) {
+    : Node("nmea_gnss_node"){
     // Déclaration des éditeurs
-    nav_sat_fix_publisher_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gnss/fix", 10);
-    gps_velocity_heading_publisher_ = this->create_publisher<msg_utils::msg::GpsVelocityHeading>("/gnss/heading_vel", 10);
+    this->declare_parameter<std::string>("serial_port_name", "/dev/ttyUSB3");
+    this->declare_parameter<int>("baud_rate", 38400);
+    this->declare_parameter<std::string>("topic_nav_sat_fix", "/gnss/fix");
+    this->declare_parameter<std::string>("topic_gps_velocity_heading", "/gnss/heading_vel");
 
+    // Lire les paramètres (ceux du fichier YAML seront utilisés si chargés via launch)
+    serial_port_name_ = this->get_parameter("serial_port_name").as_string();
+    baud_rate_ = this->get_parameter("baud_rate").as_int();
+    std::string topic_nav_sat_fix = this->get_parameter("topic_nav_sat_fix").as_string();
+    std::string topic_gps_velocity_heading = this->get_parameter("topic_gps_velocity_heading").as_string();
+
+    // Déclaration des éditeurs avec les noms des topics configurés
+    nav_sat_fix_publisher_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(topic_nav_sat_fix, 10);
+    gps_velocity_heading_publisher_ = this->create_publisher<msg_utils::msg::GpsVelocityHeading>(topic_gps_velocity_heading, 10);
+
+    // , serial_port_name_("/dev/ttyUSB0"), baud_rate_(38400) 
     // Initialisation de Boost.Asio pour la communication série
     try {
         serial_port_ = std::make_unique<boost::asio::serial_port>(io_service_);
@@ -62,6 +75,7 @@ void NmeaGnssNode::read_serial_data() {
     }
 }
 
+
 void NmeaGnssNode::parse_and_publish(const std::string &nmea_sentence) {
     NmeaParser parser;
 
@@ -69,8 +83,6 @@ void NmeaGnssNode::parse_and_publish(const std::string &nmea_sentence) {
         if (nmea_sentence.find("GGA") != std::string::npos) {
             // Analyse de la phrase GGA
             parser.parse_gga(nmea_sentence);
-            
-
             // Récupération des données
             double latitude = parser.get_lat((*parser.gga_msg)["latitude"]);
             double longitude = parser.get_lon((*parser.gga_msg)["longitude"]);
@@ -86,12 +98,12 @@ void NmeaGnssNode::parse_and_publish(const std::string &nmea_sentence) {
             nav_sat_fix_msg_->altitude = altitude;
             nav_sat_fix_msg_->status.status = status;
             nav_sat_fix_msg_->status.service = service;
-
             nav_sat_fix_publisher_->publish(*nav_sat_fix_msg_);
             RCLCPP_INFO(this->get_logger(), "Published NavSatFix message");
         } else if (nmea_sentence.find("VTG") != std::string::npos) {
             // Analyse de la phrase VTG
             parser.parse_vtg(nmea_sentence);
+
 
             // Récupération des données
             double speed_knots = std::stod((*parser.vtg_msg)["speed_knots"]);

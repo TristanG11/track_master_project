@@ -38,6 +38,14 @@ add_executable(nmea_gnss_node
 target_link_libraries(nmea_gnss_node nmea_gnss_lib nmea_parser_lib)
 ament_target_dependencies(nmea_gnss_node rclcpp sensor_msgs msg_utils Boost)
 
+# Install the launch files
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
+)
+
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
 
 if(BUILD_TESTING)
     # Ajouter un exécutable pour les tests
