@@ -1,9 +1,11 @@
 #include "nmea_gnss_cpp/nmea_gnss.hpp"
 #include <iostream>
 #include <sstream>
+#include <diagnostic_updater/diagnostic_updater.hpp>
+#include <diagnostic_updater/publisher.hpp>
 
 NmeaGnssNode::NmeaGnssNode()
-    : Node("nmea_gnss_node"){
+    : Node("nmea_gnss_node"),diagnostics_updater_(this, 0.5){
     // Déclaration des éditeurs
     this->declare_parameter<std::string>("serial_port_name", "/dev/ttyUSB3");
     this->declare_parameter<int>("baud_rate", 38400);
@@ -24,6 +26,7 @@ NmeaGnssNode::NmeaGnssNode()
     // Initialisation de Boost.Asio pour la communication série
     try {
         serial_port_ = std::make_unique<boost::asio::serial_port>(io_service_);
+        serial_port_open_ = true;
         serial_port_->open(serial_port_name_);
         serial_port_->set_option(boost::asio::serial_port_base::baud_rate(baud_rate_));
     } catch (const std::exception &e) {
@@ -35,6 +38,53 @@ NmeaGnssNode::NmeaGnssNode()
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(200), // Période de 200 ms
         std::bind(&NmeaGnssNode::get_gnss_stream, this));
+
+    // Initialisation des diagnostics
+    diagnostics_updater_.setHardwareID("NMEA GNSS Node");
+
+    // Diagnostic pour le port série
+    diagnostics_updater_.add("Serial Port Status", [this](diagnostic_updater::DiagnosticStatusWrapper &stat) {
+        if (serial_port_open_) {
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Serial port is open");
+        } else {
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Serial port is closed");
+        }
+    });
+
+    // Diagnostic pour les messages valides
+    diagnostics_updater_.add("Last Valid Messages", [this](diagnostic_updater::DiagnosticStatusWrapper &stat) {
+        rclcpp::Time now = this->now();
+
+        // Temps écoulé depuis le dernier message GGA valide
+        if (last_valid_gga_time_) {
+            double gga_delta = (now - *last_valid_gga_time_).seconds();
+            stat.add("Time since last valid GGA (seconds)", gga_delta);
+        } else {
+            stat.add("Time since last valid GGA (seconds)", "No valid GGA received");
+        }
+
+        // Temps écoulé depuis le dernier message VTG valide
+        if (last_valid_vtg_time_) {
+            double vtg_delta = (now - *last_valid_vtg_time_).seconds();
+            stat.add("Time since last valid VTG (seconds)", vtg_delta);
+        } else {
+            stat.add("Time since last valid VTG (seconds)", "No valid VTG received");
+        }
+
+        // Résumé
+        if (last_valid_gga_time_ && last_valid_vtg_time_ &&
+            (now - *last_valid_gga_time_).seconds() < 10.0 &&
+            (now - *last_valid_vtg_time_).seconds() < 10.0) {
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Receiving valid GGA and VTG messages");
+        } else {
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "Delayed GGA or VTG messages");
+        }
+    });
+
+    // Initialisation : aucune donnée valide reçue
+    last_valid_gga_time_ = std::nullopt;
+    last_valid_vtg_time_ = std::nullopt;
+
 }
 
 NmeaGnssNode::~NmeaGnssNode() {
@@ -42,6 +92,8 @@ NmeaGnssNode::~NmeaGnssNode() {
     if (serial_port_ && serial_port_->is_open()) {
         serial_port_->close();
     }
+    diagnostics_timer_.reset();
+    timer_.reset();
 }
 
 void NmeaGnssNode::get_gnss_stream() {
@@ -99,7 +151,9 @@ void NmeaGnssNode::parse_and_publish(const std::string &nmea_sentence) {
             nav_sat_fix_msg_->status.status = status;
             nav_sat_fix_msg_->status.service = service;
             nav_sat_fix_publisher_->publish(*nav_sat_fix_msg_);
-            RCLCPP_INFO(this->get_logger(), "Published NavSatFix message");
+            // Analyse et publication du message GGA
+            last_valid_gga_time_ = this->now();  // Mettre à jour l'horodatage GGA
+            RCLCPP_INFO(this->get_logger(), "Valid GGA message received");
         } else if (nmea_sentence.find("VTG") != std::string::npos) {
             // Analyse de la phrase VTG
             parser.parse_vtg(nmea_sentence);
@@ -115,7 +169,9 @@ void NmeaGnssNode::parse_and_publish(const std::string &nmea_sentence) {
             gps_velocity_heading_msg_->heading.data = std::stod((*parser.vtg_msg)["magnetic_course"]);
 
             gps_velocity_heading_publisher_->publish(*gps_velocity_heading_msg_);
-            RCLCPP_INFO(this->get_logger(), "Published GpsVelocityHeading message");
+            // Analyse et publication du message VTG
+            last_valid_vtg_time_ = this->now();  // Mettre à jour l'horodatage VTG
+            RCLCPP_INFO(this->get_logger(), "Valid VTG message received");
         } else {
             RCLCPP_WARN(this->get_logger(), "Unknown NMEA sentence: %s", nmea_sentence.c_str());
         }
@@ -123,3 +179,6 @@ void NmeaGnssNode::parse_and_publish(const std::string &nmea_sentence) {
         RCLCPP_ERROR(this->get_logger(), "Failed to parse NMEA sentence: %s", e.what());
     }
 }
+
+
+

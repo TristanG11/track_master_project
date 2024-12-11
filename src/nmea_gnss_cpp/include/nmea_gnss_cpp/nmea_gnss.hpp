@@ -1,6 +1,7 @@
 #ifndef NMEA_GNSS_NODE_HPP
 #define NMEA_GNSS_NODE_HPP
 
+#include <optional>
 #include <memory>
 #include <vector>
 #include <string>
@@ -9,7 +10,8 @@
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include <boost/asio.hpp>
 #include "nmea_gnss_cpp/nmea_parser.hpp"
-
+#include <rclcpp/time.hpp>
+#include <diagnostic_updater/diagnostic_updater.hpp>
 
 class NmeaGnssNode : public rclcpp::Node {
 public:
@@ -44,6 +46,16 @@ private:
     // Paramètres configurables
     std::string serial_port_name_; // Nom du port série
     int baud_rate_;                // Débit en bauds pour la communication
+
+    // Variables de diagnostic
+    bool serial_port_open_ = false;  // État du port série
+    std::optional<rclcpp::Time> last_valid_gga_time_;  // Dernier GGA valide
+    std::optional<rclcpp::Time> last_valid_vtg_time_;  // Dernier VTG valide
+
+    // Diagnostic updater
+    diagnostic_updater::Updater diagnostics_updater_;
+    rclcpp::TimerBase::SharedPtr diagnostics_timer_;
+
 };
 
 #endif // NMEA_GNSS_NODE_HPP

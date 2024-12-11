@@ -7,7 +7,7 @@ from geometry_msgs.msg import Twist
 from ament_index_python.packages import get_package_share_directory
 import yaml
 import os
-from diagnostic_updater import Updater, FunctionDiagnosticTask
+from diagnostic_updater import Updater
 from diagnostic_msgs.msg import DiagnosticStatus  # Import nécessaire
 
 class WheelCommandsDebug(Node):

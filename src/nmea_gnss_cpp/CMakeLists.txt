@@ -8,6 +8,8 @@ find_package(sensor_msgs REQUIRED)        # Messages GNSS standard
 find_package(msg_utils REQUIRED)          # Messages personnalisés
 find_package(Boost REQUIRED COMPONENTS system) # Boost pour la gestion du port série
 find_package(ament_cmake_gtest REQUIRED)
+find_package(diagnostic_updater REQUIRED)
+
 
 # Ajouter le répertoire des headers
 include_directories(include)
@@ -27,7 +29,7 @@ add_library(nmea_gnss_lib
 
 # Lier la bibliothèque de parsing et les dépendances de la bibliothèque GNSS
 target_link_libraries(nmea_gnss_lib nmea_parser_lib)
-ament_target_dependencies(nmea_gnss_lib rclcpp sensor_msgs msg_utils Boost)
+ament_target_dependencies(nmea_gnss_lib rclcpp sensor_msgs msg_utils Boost diagnostic_updater)
 
 # Ajouter l'exécutable principal
 add_executable(nmea_gnss_node
@@ -36,7 +38,8 @@ add_executable(nmea_gnss_node
 
 # Lier les bibliothèques et dépendances à l'exécutable
 target_link_libraries(nmea_gnss_node nmea_gnss_lib nmea_parser_lib)
-ament_target_dependencies(nmea_gnss_node rclcpp sensor_msgs msg_utils Boost)
+ament_target_dependencies(nmea_gnss_node rclcpp sensor_msgs msg_utils Boost diagnostic_updater)
+
 
 # Install the launch files
 install(DIRECTORY launch/
