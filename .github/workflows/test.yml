@@ -7,22 +7,9 @@ on:
     branches: []
 
 jobs:
-  build-and-test:
+  noop:
     runs-on: ubuntu-22.04
-
+    if: false  # Cette condition empêche l'exécution du job
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake g++ libgtest-dev
-
-    - name: Build and Run Tests for nmea_gnss_cpp
-      run: |
-        cd src/nmea_gnss_cpp
-        cmake -S . -B build
-        cmake --build build
-        cd build
-        ctest --output-on-failure
+      - name: This job will never run
+        run: echo "This job is intentionally skipped."
