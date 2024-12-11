@@ -4,11 +4,12 @@
 #include <iostream>
 
 const std::map<std::string, int> constellation_map = {
-        {"GP", 1},  // GPS
-        {"GL", 2},  // GLONASS
-        {"GA", 4},  // Galileo
-        {"BD", 8},  // BeiDou
-        {"QZ", 16}  // QZSS
+    {"GP", 1},  // GPS
+    {"GL", 2},  // GLONASS
+    {"GA", 4},  // Galileo
+    {"BD", 8},  // BeiDou
+    {"QZ", 16},  // QZSS
+    {"GN", 31}  // Multiconstellation : combinaison de toutes
 };
 
 const std::map<std::string, int> service_map{
@@ -43,21 +44,21 @@ NmeaParser::~NmeaParser(){}
 void NmeaParser::parse_stream(const std::string &nmea_stream){
     
 }
-void NmeaParser::parse_gga(const std::string &nmea_stream){
-    std::vector<std::string> tokens = NmeaParser::split(nmea_stream,',');
+void NmeaParser::parse_gga(const std::string &nmea_stream) {
+    std::vector<std::string> tokens = NmeaParser::split(nmea_stream, ',');
 
-    if (tokens.size() < 15){
-        std::cout << tokens.size();
+    if (tokens.size() < 15) {
         throw std::runtime_error("Invalid GGA sentence: not enough fields");
-    }else{
-        (*gga_msg)["time_utc"] = tokens[1];       
-        (*gga_msg)["latitude"] = tokens[2] + ',' + tokens[3];        
-        (*gga_msg)["longitude"] = tokens[4] + ',' + tokens[5];     
-        (*gga_msg)["fix_quality"] = tokens[6];       
-        (*gga_msg)["service"] = tokens[0];             
-        (*gga_msg)["num_satellites"] = tokens[7];        
-        (*gga_msg)["altitude"] = tokens[9];  
+        return;
     }
+
+    (*gga_msg)["time_utc"] = tokens[1];
+    (*gga_msg)["latitude"] = tokens[2] + ',' + tokens[3];
+    (*gga_msg)["longitude"] = tokens[4] + ',' + tokens[5];
+    (*gga_msg)["fix_quality"] = tokens[6];
+    (*gga_msg)["service"] = nmea_stream.substr(1, 2);  // Extrait "GN", "GP", etc.
+    (*gga_msg)["num_satellites"] = tokens[7];
+    (*gga_msg)["altitude"] = tokens[9];
 }
 void NmeaParser::parse_vtg(const std::string &nmea_stream){
     std::vector<std::string> tokens = NmeaParser::split(nmea_stream,',');

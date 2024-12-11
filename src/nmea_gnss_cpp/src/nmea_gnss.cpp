@@ -20,7 +20,7 @@ NmeaGnssNode::NmeaGnssNode()
 
     // Création d'un timer pour lire le flux GNSS périodiquement
     timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(100), // Période de 100 ms
+        std::chrono::milliseconds(200), // Période de 200 ms
         std::bind(&NmeaGnssNode::get_gnss_stream, this));
 }
 
@@ -69,6 +69,7 @@ void NmeaGnssNode::parse_and_publish(const std::string &nmea_sentence) {
         if (nmea_sentence.find("GGA") != std::string::npos) {
             // Analyse de la phrase GGA
             parser.parse_gga(nmea_sentence);
+            
 
             // Récupération des données
             double latitude = parser.get_lat((*parser.gga_msg)["latitude"]);
