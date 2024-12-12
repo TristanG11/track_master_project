@@ -52,7 +52,7 @@
         <ros>
           <!-- publish to /gps/fix -->
           <namespace>/</namespace>
-          <remapping>~/out:=/gps/fix</remapping>
+          <remapping>~/out:=/gnss/fix</remapping>
           <frameName>map</frameName>
         </ros>
       </plugin>

@@ -26,7 +26,7 @@ class MapFramePublisher(Node):
         self.heading = 0.0  # Initialize heading
 
         # Subscriptions
-        self.gnss_sub = self.create_subscription(NavSatFix, "/gps/fix", self.gps_cb, 10)
+        self.gnss_sub = self.create_subscription(NavSatFix, "/gnss/fix", self.gps_cb, 10)
 
         qos = QoSProfile(reliability=QoSReliabilityPolicy.BEST_EFFORT, depth=10)
 
