@@ -1,0 +1,14 @@
+[package]
+name = "nmea_gnss_rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nmea = "0.7.0"
+rclrs = "0.4.1"
+serialport = "4.6.1"
+geometry_msgs = "*"
+sensor_msgs ="*"
+nmea-parser = "0.11.0"
+msg_utils ={path = "../../../../install/msg_utils/share/msg_utils/rust/" }
+map_3d = "0.1.5"
