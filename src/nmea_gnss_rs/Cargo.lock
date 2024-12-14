@@ -1232,10 +1232,6 @@ name = "lifecycle_msgs"
 version = "1.2.1"
 
 [[patch.unused]]
-name = "minimal_publisher_rs"
-version = "0.1.0"
-
-[[patch.unused]]
 name = "nav_msgs"
 version = "4.2.4"
 

@@ -11,11 +11,13 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(rosidl_generator_rs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BoolArray.msg"
   "msg/WheelCommands.msg"
   "msg/GpsVelocityHeading.msg"
+  "msg/BatteryStatus.msg"
   DEPENDENCIES std_msgs 
 )
 ament_export_dependencies(rosidl_default_runtime)

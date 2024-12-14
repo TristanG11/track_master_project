@@ -165,8 +165,8 @@ void NmeaGnssNode::parse_and_publish(const std::string &nmea_sentence) {
 
             // Construction et publication du message ROS2
             gps_velocity_heading_msg_ = std::make_shared<msg_utils::msg::GpsVelocityHeading>();
-            gps_velocity_heading_msg_->velocity.data = speed_kmh / 3.6;  // Conversion en m/s
-            gps_velocity_heading_msg_->heading.data = std::stod((*parser.vtg_msg)["magnetic_course"]);
+            gps_velocity_heading_msg_->velocity = speed_kmh / 3.6;  // Conversion en m/s
+            gps_velocity_heading_msg_->heading = std::stod((*parser.vtg_msg)["magnetic_course"]);
 
             gps_velocity_heading_publisher_->publish(*gps_velocity_heading_msg_);
             // Analyse et publication du message VTG

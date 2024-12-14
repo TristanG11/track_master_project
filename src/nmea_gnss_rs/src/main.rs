@@ -109,20 +109,20 @@ fn main() {
                                 let mut heading_vel_msg = GpsVelocityHeading::default();
                                 let mut twist_msg = TwistWithCovarianceStamped::default();
                                 if vtg.cog_true.is_some() && vtg.sog_kph.is_some() && vtg.cog_magnetic.is_some() {
-                                    heading_vel_msg.valid.data = true;
-                                    heading_vel_msg.heading.data = vtg.cog_true.unwrap(); // Heading en degrés
-                                    heading_vel_msg.velocity.data = vtg.sog_kph.unwrap() / 3.6; // Conversion de km/h en m/s
+                                    heading_vel_msg.valid = true;
+                                    heading_vel_msg.heading = vtg.cog_true.unwrap(); // Heading en degrés
+                                    heading_vel_msg.velocity = vtg.sog_kph.unwrap() / 3.6; // Conversion de km/h en m/s
                                 } else {
-                                    heading_vel_msg.valid.data = false;
-                                    heading_vel_msg.heading.data = vtg.cog_true.unwrap_or(0.0); // Si None, utilise 0.0 par défaut
-                                    heading_vel_msg.velocity.data = vtg.sog_kph.unwrap_or(0.0) / 3.6;
+                                    heading_vel_msg.valid = false;
+                                    heading_vel_msg.heading = vtg.cog_true.unwrap_or(0.0); // Si None, utilise 0.0 par défaut
+                                    heading_vel_msg.velocity = vtg.sog_kph.unwrap_or(0.0) / 3.6;
                                 }
 
                                 twist_msg.header.frame_id = std::string::String::from("map");
                                 twist_msg.header.stamp.nanosec = node.get_clock().now().to_ros_msg().unwrap().nanosec;
                                 twist_msg.header.stamp.sec = node.get_clock().now().to_ros_msg().unwrap().sec;
                                 
-                                twist_msg.twist.twist.linear.x = heading_vel_msg.velocity.data;
+                                twist_msg.twist.twist.linear.x = heading_vel_msg.velocity;
 
                                 // orientation 
                                 pose_msg.header.stamp.sec = twist_msg.header.stamp.sec ;

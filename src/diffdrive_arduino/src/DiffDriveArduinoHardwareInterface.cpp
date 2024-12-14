@@ -142,10 +142,10 @@ hardware_interface::return_type DiffDriveArduinoHardwareInterface::write(const r
 
     // Publish wheel commands to the ROS2 topic
     msg_utils::msg::WheelCommands cmd_msg;
-    cmd_msg.front_left_wheel_speed.data = hw_commands_["front_left_wheel_joint"];
-    cmd_msg.front_right_wheel_speed.data = hw_commands_["front_right_wheel_joint"];
-    cmd_msg.rear_right_wheel_speed.data = hw_commands_["rear_right_wheel_joint"];
-    cmd_msg.rear_left_wheel_speed.data = hw_commands_["rear_left_wheel_joint"];
+    cmd_msg.front_left_wheel_speed = hw_commands_["front_left_wheel_joint"];
+    cmd_msg.front_right_wheel_speed = hw_commands_["front_right_wheel_joint"];
+    cmd_msg.rear_right_wheel_speed = hw_commands_["rear_right_wheel_joint"];
+    cmd_msg.rear_left_wheel_speed = hw_commands_["rear_left_wheel_joint"];
 
     command_publisher_->publish(cmd_msg);
 

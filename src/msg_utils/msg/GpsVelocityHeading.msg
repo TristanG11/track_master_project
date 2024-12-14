@@ -1,3 +1,4 @@
-std_msgs/Bool valid #data is valid
-std_msgs/Float64 heading   # Heading, in rad
-std_msgs/Float64 velocity  # Speed m/s
+std_msgs/Header header
+bool valid #data is valid
+float64 heading   # Heading, in rad
+float64 velocity  # Speed m/s
