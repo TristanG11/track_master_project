@@ -12,3 +12,7 @@ sensor_msgs ="*"
 nmea-parser = "0.11.0"
 msg_utils ={path = "../../../../install/msg_utils/share/msg_utils/rust/" }
 map_3d = "0.1.5"
+
+[[bin]]
+name = "nmea_gnss_node"
+path = "src/main.rs"

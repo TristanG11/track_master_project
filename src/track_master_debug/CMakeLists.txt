@@ -21,6 +21,7 @@ install(
 install(
   PROGRAMS
   ${PROJECT_NAME}/wheel_commands_debug.py
+  #${PROJECT_NAME}/data_recorder.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
