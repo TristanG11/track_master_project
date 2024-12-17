@@ -1,6 +1,5 @@
-std_msgs/Header header         # Métadonnées pour l'horodatage et l'ID de la frame
-float64 battery_voltage        # Tension principale de la batterie (en volts)
-float64 front_right_motor      # Tension du moteur avant droit (en volts)
-float64 front_left_motor       # Tension du moteur avant gauche (en volts)
-float64 rear_left_motor        # Tension du moteur arrière gauche (en volts)
-float64 rear_right_motor       # Tension du moteur arrière droit (en volts)
+std_msgs/Header header         # Metadata for timestamping and frame ID.
+float64 voltage        # Main voltage of the battery in volts.
+float64 current         # Current being drawn from the battery in amperes.
+float64 charge_level    #  Current charge level of the battery as a percentage (0-100%).
+bool charging           # Whether the battery is currently being charged (true/false)

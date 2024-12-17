@@ -6,7 +6,7 @@
 class DriverMotor : public Motor {
 public:
     // Constructor
-    DriverMotor(uint8_t pinEnable, uint8_t pinCW, uint8_t pinCLK, String id);
+    DriverMotor(uint8_t pinEnable, uint8_t pinCW, uint8_t pinCLK, String id,uint8_t pin_current,uint8_t pin_voltage);
 
     // Setup the motor
     void setup() override;

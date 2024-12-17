@@ -1,17 +1,17 @@
 #include "hardware_interface.hpp"
 
-HardwareInterface::HardwareInterface() {}
+HardwareInterface::HardwareInterface(): batt_status(BATTERY.voltage,BATTERY.current) {}
 
 void HardwareInterface::addMotor(Motor* motor) {
     motors_[motor->getId()] = motor; // Add motor to the map
 }
+
 
 void HardwareInterface::setup() {
     for (auto& [key, motor] : motors_) {
         motor->setup(); // Call setup on each motor
     }
 }
-
 
 void HardwareInterface::handleCommand(const String& cmd) {
     // Example input: "front_left_wheel_joint,0.5;front_right_wheel_joint,-0.5;rear_left_wheel_joint,0.3;rear_right_wheel_joint,-0.3;"
@@ -37,11 +37,11 @@ void HardwareInterface::handleCommand(const String& cmd) {
                 Motor* motor = it->second;
                 motor->setSpeed(speedValue);
             } else {
-                Serial.print("Motor ID not found: ");
+                Serial.print(" Error : Motor ID not found: ");
                 Serial.println(motorId);
             }
         } else {
-            Serial.print("Malformed segment: ");
+            Serial.print("Error : Malformed segment: ");
             Serial.println(segment);
         }
 
@@ -64,15 +64,31 @@ void HardwareInterface::feedback() {
     for (auto& [key, motor] : motors_) {
         feedback += key;                    // Append motor ID
         feedback += ',';                    // Separator
-        feedback += motor->currentPosition();      // Add position
+        feedback += String(motor->currentPosition(), 2);      // Add position
         feedback += ',';                    // Separator
-        feedback += motor->speed();   // Add speed
+        feedback += String(motor->speed(), 2);  // Add speed
         feedback += ';';                    // End of entry
+        motor->updateStatus();
     }
 
     Serial.println(feedback);
+
 }
 
+
+void HardwareInterface::sendStatus(){
+
+  // Motors and battery status
+  String statutes;
+  for (auto& [key, motor] : motors_) {
+    if (motor) {  // Vérifie si le pointeur est valide
+            statutes += motor->getStatus();
+        }
+  }
+  batt_status.updateAll();
+  statutes += batt_status.serialize();
+  Serial.println(statutes);
+}
 
 
 

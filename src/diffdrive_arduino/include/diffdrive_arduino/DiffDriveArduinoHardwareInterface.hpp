@@ -7,7 +7,8 @@
 #include <vector>
 #include <string>
 #include "msg_utils/msg/wheel_commands.hpp" // Custom message type for wheel commands
-
+#include "msg_utils/msg/battery_status.hpp"
+#include "msg_utils/msg/four_motors_status.hpp"
 
 namespace diffdrive_arduino
 {
@@ -35,8 +36,10 @@ public:
   hardware_interface::return_type write(const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 private:
-
+  rclcpp::Node::SharedPtr node_;
   rclcpp::Publisher<msg_utils::msg::WheelCommands>::SharedPtr command_publisher_;
+  rclcpp::Publisher<msg_utils::msg::BatteryStatus>::SharedPtr battery_status_publisher_;
+  rclcpp::Publisher<msg_utils::msg::FourMotorsStatus>::SharedPtr motors_status_publisher_;
   //rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr state_publisher_;
   std::map<std::string, double> hw_commands_; 
   std::map<std::string, std::array<double, 2>> hw_states_;

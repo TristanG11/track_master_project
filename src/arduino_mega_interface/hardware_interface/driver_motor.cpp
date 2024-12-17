@@ -1,8 +1,8 @@
 #include "driver_motor.hpp"
 
 // Constructor
-DriverMotor::DriverMotor(uint8_t pinEnable, uint8_t pinCW, uint8_t pinCLK, String id)
-    : Motor(id, AccelStepper::DRIVER, pinEnable, pinCW,pinCLK), pinEnable_(pinEnable), pinCW_(pinCW), pinCLK_(pinCLK) {}
+DriverMotor::DriverMotor(uint8_t pinEnable, uint8_t pinCW, uint8_t pinCLK, String id,uint8_t pin_current,uint8_t pin_voltage)
+    : Motor(id, AccelStepper::DRIVER, pinEnable, pinCW,pinCLK,pin_current,pin_voltage), pinEnable_(pinEnable), pinCW_(pinCW), pinCLK_(pinCLK) {}
 
 // Setup the motor
 void DriverMotor::setup() {

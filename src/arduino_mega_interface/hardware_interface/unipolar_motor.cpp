@@ -1,8 +1,8 @@
 #include "unipolar_motor.hpp"
 
 // Constructor
-UnipolarMotor::UnipolarMotor(uint8_t IN1, uint8_t IN3, uint8_t IN2, uint8_t IN4, String id)
-    : Motor(id,AccelStepper::FULL4WIRE,IN1,IN3,IN2,IN4), IN1_(IN1), IN2_(IN2), IN3_(IN3), IN4_(IN4) {}
+UnipolarMotor::UnipolarMotor(uint8_t IN1, uint8_t IN3, uint8_t IN2, uint8_t IN4, String id,uint8_t pin_current,uint8_t pin_voltage)
+    : Motor(id,AccelStepper::FULL4WIRE,IN1,IN3,IN2,IN4,pin_current,pin_voltage), IN1_(IN1), IN2_(IN2), IN3_(IN3), IN4_(IN4) {}
 
 // Setup the motor
 void UnipolarMotor::setup() {
