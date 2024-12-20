@@ -20,6 +20,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BatteryStatus.msg"
   "msg/MotorStatus.msg"
   "msg/FourMotorsStatus.msg"
+  "msg/MotorFeedback.msg"
+  "msg/FourMotorsFeedback.msg"
   DEPENDENCIES std_msgs 
 )
 ament_export_dependencies(rosidl_default_runtime)

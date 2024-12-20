@@ -18,17 +18,16 @@ def generate_launch_description():
         )
     )
 
-    joystick_control_node = Node(
-            package='joystick_control',
-            executable='joystick_control_node',
-            output='screen',
-            remappings=[
-                ('/cmd_vel', '/diff_drive_controller/cmd_vel_unstamped')
-            ]
+    joystick_control_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory('joystick_control'), 'launch', 'joystick_control.launch.py'
+            )
         )
+    )
 
 
     return LaunchDescription([
         robot_control_launch,
-        joystick_control_node,
+        joystick_control_launch,
     ])

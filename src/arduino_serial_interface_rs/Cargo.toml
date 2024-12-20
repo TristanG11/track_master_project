@@ -1,0 +1,9 @@
+[package]
+name = "arduino_serial_interface_rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rclrs = "0.4.1"
+serialport = "4.6.1"
+msg_utils ={path = "../../../../install/msg_utils/share/msg_utils/rust/" }

@@ -94,13 +94,30 @@ class JoystickControlNode(Node):
                 time.sleep(2)
             self.updater.update()
 
-    def joy_to_speed(self, min_speed, max_speed, joy_val):
-        return ((max_speed - min_speed) / (self.max_joy - self.min_joy)) * joy_val
-
-    def apply_deadzone(self, speed):
-        if -self.deadzone_threshold < speed < self.deadzone_threshold:
+    def joy_to_lin(self,joy_val):
+        if joy_val >= self.deadzone_threshold :
+            coeff = (self.max_linear_speed - self.min_linear_speed) / (self.max_joy - self.deadzone_threshold)
+            d = self.min_linear_speed - coeff * self.deadzone_threshold
+            return coeff * joy_val + d
+        elif joy_val <= -self.deadzone_threshold :
+            coeff = (- self.min_linear_speed + self.max_linear_speed) / (-self.deadzone_threshold + self.max_joy )
+            d = -self.min_linear_speed  + coeff * self.deadzone_threshold
+            return coeff *joy_val + d 
+        else:
             return 0.0
-        return speed
+    
+    def joy_to_ang(self,joy_val):
+        if joy_val >= self.deadzone_threshold :
+            coeff = (self.max_angular_speed - self.min_angular_speed) / (self.max_joy - self.deadzone_threshold)
+            d = self.min_angular_speed - coeff * self.deadzone_threshold
+            return coeff * joy_val + d
+        elif joy_val <= -self.deadzone_threshold :
+            coeff = (- self.min_angular_speed + self.max_angular_speed) / (-self.deadzone_threshold + self.max_joy )
+            d = -self.min_angular_speed  + coeff * self.deadzone_threshold
+            return coeff *joy_val + d 
+        else:
+            return 0.0
+
 
     def update(self):
         if pygame.joystick.get_count() == 0:
@@ -114,11 +131,10 @@ class JoystickControlNode(Node):
             if event.type == JOYAXISMOTION:
                 axis = event.axis
                 if axis == self.axis_angular:
-                    self.angular_speed = self.joy_to_speed(self.min_angular_speed, self.max_angular_speed, self.joystick.get_axis(axis))
-                    self.angular_speed = self.apply_deadzone(self.angular_speed)
+                    self.angular_speed = - self.joy_to_ang(self.joystick.get_axis(axis))
+
                 elif axis == self.axis_linear:
-                    self.linear_speed = self.joy_to_speed(self.min_linear_speed, self.max_linear_speed, self.joystick.get_axis(axis))
-                    self.linear_speed = self.apply_deadzone(self.linear_speed)
+                    self.linear_speed = - self.joy_to_lin(self.joystick.get_axis(axis))
             elif event.type == JOYBUTTONDOWN:
                 button = event.button
                 if button == self.button_stop:

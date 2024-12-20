@@ -1,0 +1,6 @@
+# FourMotorsFeedback.msg
+std_msgs/Header header 
+MotorFeedback motor_front_left
+MotorFeedback motor_front_right
+MotorFeedback motor_rear_left
+MotorFeedback motor_rear_right

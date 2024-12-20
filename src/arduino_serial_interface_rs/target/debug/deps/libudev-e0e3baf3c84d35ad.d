@@ -1,0 +1,12 @@
+/home/tristan/ros2_ws/src/robot_project/src/arduino_serial_interface_rs/target/debug/deps/liblibudev-e0e3baf3c84d35ad.rmeta: /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/lib.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/context.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/device.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/enumerator.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/error.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/monitor.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/handle.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/util.rs
+
+/home/tristan/ros2_ws/src/robot_project/src/arduino_serial_interface_rs/target/debug/deps/libudev-e0e3baf3c84d35ad.d: /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/lib.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/context.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/device.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/enumerator.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/error.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/monitor.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/handle.rs /home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/util.rs
+
+/home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/lib.rs:
+/home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/context.rs:
+/home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/device.rs:
+/home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/enumerator.rs:
+/home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/error.rs:
+/home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/monitor.rs:
+/home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/handle.rs:
+/home/tristan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libudev-0.3.0/src/util.rs:

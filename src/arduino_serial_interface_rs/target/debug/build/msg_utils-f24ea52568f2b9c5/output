@@ -1,0 +1,1 @@
+cargo:rustc-link-search=/home/tristan/ros2_ws/install/msg_utils/lib
