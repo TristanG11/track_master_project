@@ -1,5 +1,5 @@
-#include "MotorController.hpp"
-//#include <TimerThree.h>
+/*#include "MotorController.hpp"
+#include <TimerThree.h>
 
 MotorController motorController;
 
@@ -44,18 +44,18 @@ void processSerialInput() {
     }
 }
 */
-
+/*
 // Configuration de TimerThree pour appeler computePID périodiquement
-/*void setupTimer() {
+void setupTimer() {
     // Configurer TimerThree avec la fréquence en Hz
     Timer3.initialize(TIMER_FREQUENCY_SEC * 1000000); // Intervalle en microsecondes
     Timer3.attachInterrupt([]() {
         // Appeler computePID dans l'interruption
         motorController.computePID();
     });
-}*/
+}
 
-#include <Ticker.h>
+/*#include <Ticker.h>
 Ticker pidTicker;
 
 void setupTimer() {
@@ -63,8 +63,8 @@ void setupTimer() {
         motorController.computePID();
     });
 }
-
-
+*/
+/*
 
 
 void setup() {
@@ -129,7 +129,55 @@ void loop() {
             lastMessageSentTime = currentTime; // Marquer l'heure d'envoi
         }
     }
+}*/
+
+
+//The sample code for driving one way motor encoder
+const byte encoder0pinA = 2;//A pin -> the interrupt pin 0
+const byte encoder0pinB = 4;//B pin -> the digital pin 4
+byte encoder0PinALast;
+int duration;//the number of the pulses
+boolean Direction;//the rotation direction
+float speed = 0;
+#include <TimerOne.h>
+void setup()
+{
+  Serial.begin(57600);//Initialize the serial port
+  EncoderInit();//Initialize the module
 }
 
+void loop()
+{
+  Serial.print("Pulse:");
+  Serial.println(duration);
+  //duration = 0;
+  delay(100);
+}
 
+void EncoderInit()
+{
+  Direction = true;//default -> Forward
+  pinMode(encoder0pinB,INPUT);
+  attachInterrupt(0, wheelSpeed, FALLING);
+}
 
+void wheelSpeed()
+{
+  int Lstate = digitalRead(encoder0pinA);
+  if((encoder0PinALast == LOW) && Lstate==HIGH)
+  {
+    int val = digitalRead(encoder0pinB);
+    if(val == LOW && Direction)
+    {
+      Direction = false; //Reverse
+    }
+    else if(val == HIGH && !Direction)
+    {
+      Direction = true;  //Forward
+    }
+  }
+  encoder0PinALast = Lstate;
+
+  if(!Direction)  duration  ;
+  else  duration--;
+}

@@ -13,7 +13,7 @@ enum MessageType {
 
 fn main() {
     // Initialisation du port série
-    let serial_port = serialport::new("/dev/ttyUSB0", 500_000)
+    let serial_port = serialport::new("/dev/ttyUSB0", 115200)
         .timeout(std::time::Duration::from_secs(2))
         .open()
         .expect("Impossible d'ouvrir le port série");
@@ -28,7 +28,7 @@ fn main() {
 
     let _subscription= node
     .create_subscription::<WheelCommands,_>(
-        "/cmd_vel_desired",
+        "/cmd_vel_to_send",
         rclrs::QOS_PROFILE_DEFAULT,
         {
         let serial_port = serial_port.clone();
@@ -38,7 +38,7 @@ fn main() {
         move |msg: WheelCommands| {
 
             let command = format!(
-                "fl:{:.2};fr:{:.2};rl:{:.2};rr:{:.2}\n",
+                "<fl:{:.2};fr:{:.2};rl:{:.2};rr:{:.2}>",
                 msg.front_left_wheel_speed,
                 msg.front_right_wheel_speed,
                 msg.rear_left_wheel_speed,
@@ -61,7 +61,7 @@ fn main() {
                         if space_available >= min_free_space as i32{
                             // Écrire dans le port série
                             match port.write(command.as_bytes()) {
-                                Ok(_) => {println!("Commande envoyée : {}", command)} //
+                                Ok(_) => {/*println!("Commande envoyée : {}", command)*/} //
                                 Err(e) => eprintln!("Erreur lors de l'envoi de la commande au port série : {}", e),
                             }
                         } else {
@@ -102,14 +102,16 @@ fn main() {
                     let mut temp_buffer = [0; 256];
                     if let Ok(size) = port.read(&mut temp_buffer) {
                         buffer.extend_from_slice(&temp_buffer[..size]);
-
+                        
                         // Rechercher les messages complets délimités par `<` et `>`
                     while let Some(start) = buffer.iter().position(|&b| b == b'<') {
                         if let Some(end) = buffer.iter().skip(start).position(|&b| b == b'>') {
                             // Extraire le message complet entre `<` et `>`
+                            
                             let end = start + end;
                             let message = buffer.drain(start..=end).collect::<Vec<_>>();
                             let message = String::from_utf8_lossy(&message[1..message.len() - 1]).to_string();
+                            
                             match determine_message_type(&message) {
 
                                 MessageType::Error(msg) => {
@@ -154,37 +156,59 @@ fn main() {
     rclrs::spin(node).unwrap();
 }
 
-
 // Déterminer le type de message
 fn determine_message_type(line: &str) -> MessageType {
     if line.contains("Error") {
         MessageType::Error(line.to_string())
     } else if line.starts_with("st_") {
         MessageType::Status(line.to_string())
-    } else if line.starts_with("fr") {
+    } else if line.starts_with("fl") || line.starts_with("rl") || line.starts_with("fr") || line.starts_with("rr") {
         // Par défaut, considérer comme Feedback
         MessageType::Feedback(line.to_string())
-    }else {
+    } else {
         MessageType::Problematic(line.to_string())
     }
 }
+
 fn parse_feedback(line: &str) -> FourMotorsFeedback {
     let mut feedback_msg = FourMotorsFeedback::default();
     let segments: Vec<&str> = line.split(';').collect();
     for segment in segments {
-        if let Some((motor_name, speed)) = segment.split_once(':') {
-            match motor_name {
-                "fl" => feedback_msg.motor_front_left.speed = speed.parse().unwrap_or(0.0),
-                "fr" => feedback_msg.motor_front_right.speed = speed.parse().unwrap_or(0.0),
-                "rl" => feedback_msg.motor_rear_left.speed = speed.parse().unwrap_or(0.0),
-                "rr" => feedback_msg.motor_rear_right.speed = speed.parse().unwrap_or(0.0),
-                _ => (),
+        // Découper chaque segment en trois parties : motor_name, position et speed
+        let parts: Vec<&str> = segment.split(',').collect();
+        if parts.len() == 3 {
+            if let (Some(motor_name), Some(position), Some(speed)) = (
+                parts.get(0),
+                parts.get(1).and_then(|pos| pos.parse().ok()),
+                parts.get(2).and_then(|spd| spd.parse().ok()),
+            ) {
+                match *motor_name {
+                    "fl" => {
+                        feedback_msg.motor_front_left.position = position;
+                        feedback_msg.motor_front_left.speed = speed;
+                    }
+                    "fr" => {
+                        feedback_msg.motor_front_right.position = position;
+                        feedback_msg.motor_front_right.speed = speed;
+                    }
+                    "rl" => {
+                        feedback_msg.motor_rear_left.position = position;
+                        feedback_msg.motor_rear_left.speed = speed;
+                    }
+                    "rr" => {
+                        feedback_msg.motor_rear_right.position = position;
+                        feedback_msg.motor_rear_right.speed = speed;
+                    }
+                    _ => (),
+                }
             }
         }
     }
 
     feedback_msg
 }
+
+
 
 // Fonction pour parser un message de type Status
 fn parse_status(line: &str) -> (FourMotorsStatus, BatteryStatus) {

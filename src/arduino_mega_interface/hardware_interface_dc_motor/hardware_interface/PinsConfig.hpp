@@ -1,4 +1,4 @@
-/*#ifndef PINSCONFIG_HPP
+#ifndef PINSCONFIG_HPP
 #define PINSCONFIG_HPP
 
 // Broches pour le moteur avant droit (Front Right)
@@ -37,7 +37,8 @@ const int MOTOR_RL_VOLTAGE_PIN = A7;  // Mesure de la tension (analogique)
 const int BATT_CURRENT_PIN = A8;
 const int BATT_VOLTAGE_PIN = A9;
 #endif // PINSCONFIG_HPP
-*/
+
+/*
 #ifndef PINSCONFIG_HPP
 #define PINSCONFIG_HPP
 
@@ -81,3 +82,4 @@ const int BATT_CURRENT_PIN = A0;        // Mesure du courant (unique ADC sur ESP
 const int BATT_VOLTAGE_PIN = A0;        // Mesure de la tension (partage)
 
 #endif // PINSCONFIG_HPP
+*/
