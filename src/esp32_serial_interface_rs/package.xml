@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>arduino_serial_interface_rs</name>
+  <name>eps32_serial_interface_rs</name>
   <version>0.1.0</version>
   <description>
     A ROS 2 package written in Rust.
