@@ -38,7 +38,7 @@ impl MotorController {
     /// Returns feedback from all motors as a formatted string
     pub fn get_feedback(&self) -> String {
         let motors = self.motors.lock().unwrap();
-        let mut feedback = String::from("<");
+        let mut feedback = String::from("<FB=");
 
         for (name, motor) in motors.iter() {
             feedback.push_str(&format!(
@@ -73,25 +73,27 @@ impl MotorController {
         if !cmd.starts_with('<') || !cmd.ends_with('>') {
             return Err(String::from("Error: missing < or > in stream"));
         }
+        if cmd.contains("CMD"){
+            let cmd_body = &cmd[5..cmd.len() - 1]; // Remove '<' and '>' from the command
 
-        let cmd_body = &cmd[1..cmd.len() - 1]; // Remove '<' and '>' from the command
-
-        let mut motors = self.motors.lock().unwrap();
-        for segment in cmd_body.split(';') {
-            if let Some((name, value)) = segment.split_once(':') {
-                if let Ok(desired_speed) = value.trim().parse::<f32>() {
-                    if let Some(motor) = motors.get_mut(name.trim()) {
-                        motor.state.set_desired_speed(desired_speed); // Update desired speed
+            let mut motors = self.motors.lock().unwrap();
+            for segment in cmd_body.split(';') {
+                if let Some((name, value)) = segment.split_once(':') {
+                    if let Ok(desired_speed) = value.trim().parse::<f32>() {
+                        if let Some(motor) = motors.get_mut(name.trim()) {
+                            motor.state.set_desired_speed(desired_speed); // Update desired speed
+                        } else {
+                            return Err(format!("<Error: motor '{}' not found>", name));
+                        }
                     } else {
-                        return Err(format!("<Error: motor '{}' not found>", name));
+                        return Err(format!("<Error: invalid speed value '{}'>", value));
                     }
                 } else {
-                    return Err(format!("<Error: invalid speed value '{}'>", value));
+                    return Err(format!("<Error: invalid segment '{}'>", segment));
                 }
-            } else {
-                return Err(format!("Error: invalid segment '{}'", segment));
             }
         }
+        
 
         Ok(())
     }

@@ -5,7 +5,6 @@ use esp_idf_hal::peripherals::Peripherals;
 use esp_idf_hal::prelude::*;
 use esp_idf_hal::task::queue::Queue;
 use esp_idf_hal::timer;
-mod config;
 mod encoder;
 mod motor;
 mod motor_controller;
