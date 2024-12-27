@@ -20,19 +20,19 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 const QUEUE_LENGTH: usize = 10;
-/* */
+
 fn main() {
-    esp_idf_sys::link_patches(); // Nécessaire pour ESP-IDF
+    esp_idf_sys::link_patches(); // Required for ESP-IDF
     let peripherals = Peripherals::take().unwrap();
 
-    // Configuration du timer PWM
+    // PWM timer configuration
     let timer_config = TimerConfig::new()
         .frequency(1.kHz().into())
         .resolution(esp_idf_hal::ledc::Resolution::Bits8);
     let pwm_timer = LedcTimerDriver::new(peripherals.ledc.timer0, &timer_config).unwrap();
 
-    // pins creation for all motors :
-    // motor front right
+    // Pins setup for all motors
+    // Motor: front right
     let dir_pin_fr = peripherals.pins.gpio5;
     let pwm_pin_fr = LedcDriver::new(
         peripherals.ledc.channel0,
@@ -51,7 +51,7 @@ fn main() {
         peripherals.pcnt0,
     );
 
-    // motor front left
+    // Motor: front left
     let dir_pin_fl = peripherals.pins.gpio15;
     let pwm_pin_fl = LedcDriver::new(
         peripherals.ledc.channel1,
@@ -70,7 +70,7 @@ fn main() {
         peripherals.pcnt1,
     );
 
-    // motor rear left
+    // Motor: rear left
     let dir_pin_rl = peripherals.pins.gpio9;
     let pwm_pin_rl = LedcDriver::new(
         peripherals.ledc.channel2,
@@ -89,7 +89,7 @@ fn main() {
         peripherals.pcnt2,
     );
 
-    //motor rear right
+    // Motor: rear right
     let dir_pin_rr = peripherals.pins.gpio33;
     let pwm_pin_rr = LedcDriver::new(
         peripherals.ledc.channel3,
@@ -108,27 +108,25 @@ fn main() {
         peripherals.pcnt3,
     );
 
-    // timer for pid computation
-
+    // Timer setup for PID computation
     let timer_config = timer::config::Config::new().auto_reload(true);
     let mut timer = timer::TimerDriver::new(peripherals.timer01, &timer_config).unwrap();
 
     let mut controller = MotorController::new();
 
+    // Add motors to the controller
     controller.add_motor(motor_front_left);
     controller.add_motor(motor_front_right);
     controller.add_motor(motor_rear_right);
     controller.add_motor(motor_rear_left);
 
-    // Setup timer
+    // Setup periodic timer
     let queue = Arc::new(Queue::new(QUEUE_LENGTH));
-
     controller.setup_timer(&mut timer, queue.clone());
 
     let controller = Arc::new(Mutex::new(controller));
 
-    // thread for processing motor :
-
+    // Thread for processing motors
     let motor_processing_thread = {
         let controller = controller.clone();
         let queue = queue.clone();
@@ -137,7 +135,6 @@ fn main() {
                 {
                     if let Ok(mut controller) = controller.try_lock() {
                         controller.process_motors();
-                        //println!("Processed motors, time since last call: {:?}", duration);
                     }
                 }
                 std::thread::sleep(Duration::from_millis(5));
@@ -145,12 +142,10 @@ fn main() {
         })
     };
 
-    // uart configuration
-
+    // UART configuration
     let mut config = uart::config::Config::default().baudrate(Hertz(115200));
     config.data_bits = DataBits::DataBits8;
     config.rx_fifo_size = 528 as usize;
-    //config.tx_fifo_size = 4069 as usize;
     config.event_config.rx_fifo_full = Some(10);
 
     let uart = uart::UartDriver::new(
@@ -163,52 +158,46 @@ fn main() {
     )
     .unwrap();
 
+    // Thread for UART communication
     let uart_thread = {
         let controller = controller.clone();
         std::thread::spawn(move || {
-            let mut buffer = [0u8; 256]; // Taille augmentée
-            let mut last_execution_time = std::time::Instant::now(); // Initialisez le timer
+            let mut buffer = [0u8; 256];
+            let mut last_execution_time = std::time::Instant::now();
 
             loop {
-                // Lecture du port série
+                // Read from UART
                 match uart.read(&mut buffer, 2) {
                     Ok(size) => {
                         if size > 0 {
-                            // Convertir le buffer en String
                             if let Ok(recv) = std::str::from_utf8(&buffer[..size]) {
-                                let command = recv.trim().to_string(); // Nettoyer et convertir en String
-                                if let Err(e) = controller.lock().unwrap().handle_command(&command)
-                                {
-                                    //eprintln!("Erreur dans handle_command: {:?}", e);
+                                let command = recv.trim().to_string();
+                                if let Err(e) = controller.lock().unwrap().handle_command(&command) {
+                                    // Log errors from handle_command
                                 }
                             }
                         }
                     }
-                    Err(e) => {
-                        //eprintln!("Erreur de lecture UART : {:?}", e);
+                    Err(_) => {
+                        // Log UART read error
                     }
                 }
 
-                // Écriture périodique toutes les 40 ms
+                // Send feedback every 40 ms
                 if last_execution_time.elapsed() >= std::time::Duration::from_millis(40) {
                     let message = controller.lock().unwrap().get_feedback();
                     println!("{}", message);
-                    last_execution_time = std::time::Instant::now(); // Réinitialiser le timer
+                    last_execution_time = std::time::Instant::now();
                 }
 
-                // Pause pour limiter la fréquence de la boucle
+                // Delay to reduce loop frequency
                 std::thread::sleep(std::time::Duration::from_millis(5));
             }
         })
     };
 
-    // Boucle principale
+    // Main loop
     loop {
-        {
-            //let controller = controller.lock().unwrap();
-            //println!("{}", controller.get_feedback());
-        }
-
         std::thread::sleep(std::time::Duration::from_secs_f32(0.10));
     }
 }

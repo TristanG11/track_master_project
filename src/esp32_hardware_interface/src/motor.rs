@@ -7,11 +7,10 @@ use esp_idf_hal::ledc::LedcDriver;
 use esp_idf_hal::peripheral::Peripheral;
 use esp_idf_svc::hal::pcnt::Pcnt;
 
-const INTEGRAL_MIN: f32 = -170.0; // Limite inférieure pour l'intégrale
-const INTEGRAL_MAX: f32 = 170.0; // Limite supérieure pour l'intégrale
-const CONTROL_MIN: f32 = -200.0; // Limite inférieure pour la commande
-const CONTROL_MAX: f32 = 200.0; // Limite supérieure pour la commande
-                                // Calculer l'erreur
+const INTEGRAL_MIN: f32 = -170.0; // Lower limit for the integral
+const INTEGRAL_MAX: f32 = 170.0;  // Upper limit for the integral
+const CONTROL_MIN: f32 = -200.0;  // Lower limit for the control signal
+const CONTROL_MAX: f32 = 200.0;   // Upper limit for the control signal
 
 use crate::encoder::Encoder;
 
@@ -32,10 +31,16 @@ impl Motor {
         encoder_b_pin: impl Peripheral<P = impl InputPin> + 'static,
         pcnt: impl Peripheral<P = impl Pcnt> + 'static,
     ) -> Self {
-        // Initialiser les broches du moteur
+        // Initialize motor pins
         let pins = MotorPin::new(dir_pin, pwm_pin);
+
+        // Initialize motor state
         let state = MotorState::new();
+
+        // Initialize PID controller with default gains
         let pid = MotorPID::new(10.0, 5.0, 0.3);
+
+        // Initialize encoder
         let encoder = Encoder::new(pcnt, encoder_a_pin, encoder_b_pin).unwrap();
 
         Motor {
@@ -47,44 +52,53 @@ impl Motor {
         }
     }
 
-    /// Calcule la commande PID
+    /// Computes the PID control signal
     pub fn compute_control(&mut self) -> f32 {
+        // Update current speed from the encoder
         self.state.speed = self.encoder.compute_speed();
+
+        // Compute the current position
         self.state.compute_position();
+
+        // Calculate error between desired speed and current speed
         let error = self.state.desired_speed - self.state.speed;
 
-        // Calcul de l'intégrale, avec contrainte
+        // Update integral term with constraints
         self.pid.integral += error * TIMER_FREQUENCY_SEC;
         self.pid.integral = self.pid.integral.clamp(INTEGRAL_MIN, INTEGRAL_MAX);
 
-        // Calcul de la dérivée
+        // Calculate the derivative term
         let derivative = (error - self.pid.prev_error) / TIMER_FREQUENCY_SEC;
 
-        // Calculer la commande PID
+        // Compute the PID control signal
         let mut control =
             self.pid.kp * error + self.pid.ki * self.pid.integral + self.pid.kd * derivative;
 
-        // Contraindre la commande
+        // Constrain the control signal
         control = control.clamp(CONTROL_MIN, CONTROL_MAX);
+
+        // Save the current error for the next computation
         self.pid.prev_error = error;
+
         control
     }
 
+    /// Sets the command to the motor based on the control signal
     pub fn set_cmd(&mut self) {
         match self.state.cmd {
             n if n < 0.0 => {
-                //println!("BACKWARD");
+                // Set motor to move backward
                 self.set_dir(Direction::Backward);
                 let cmd = (-n) as u32;
                 self.pins.pwm_pin.set_duty(cmd).unwrap();
             }
             n if n == 0.0 => {
-                //   println!("STOP");
+                // Stop the motor
                 self.set_dir(Direction::Stop);
                 self.pins.pwm_pin.set_duty(0).unwrap();
             }
             n if n > 0.0 => {
-                //  println!("FORWARD");
+                // Set motor to move forward
                 self.set_dir(Direction::Forward);
                 self.pins.pwm_pin.set_duty(n as u32).unwrap();
             }
@@ -92,15 +106,19 @@ impl Motor {
         }
     }
 
+    /// Sets the direction of the motor
     pub fn set_dir(&mut self, direction: Direction) {
         match direction {
             Direction::Backward => {
+                // Set direction pin to low for backward motion
                 self.pins.dir_pin.set_low().unwrap();
             }
             Direction::Forward => {
+                // Set direction pin to high for forward motion
                 self.pins.dir_pin.set_high().unwrap();
             }
             Direction::Stop => {
+                // Set direction pin to low to stop the motor
                 self.pins.dir_pin.set_low().unwrap();
             }
         }
