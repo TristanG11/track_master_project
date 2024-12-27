@@ -8,13 +8,13 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
 
-    pkg_name_ctrl = 'robot_control'
+    pkg_name_ctrl = 'track_master_control'
 
 
-    robot_control_gazebo_launch = IncludeLaunchDescription(
+    track_master_control_gazebo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
-                get_package_share_directory(pkg_name_ctrl), 'launch', 'robot_control_gazebo.launch.py'
+                get_package_share_directory(pkg_name_ctrl), 'launch', 'track_master_control_gazebo.launch.py'
             )
         )
     )
@@ -29,6 +29,6 @@ def generate_launch_description():
         )
 
     return LaunchDescription([
-        robot_control_gazebo_launch,
+        track_master_control_gazebo_launch,
         joystick_control_node,
     ])

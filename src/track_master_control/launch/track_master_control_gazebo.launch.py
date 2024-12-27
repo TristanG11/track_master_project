@@ -9,7 +9,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     pkg_name_des = 'track_master'
-    pkg_name_ctrl = 'robot_control'
+    pkg_name_ctrl = 'track_master_control'
 
     gazebo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -19,17 +19,17 @@ def generate_launch_description():
         )
     )
 
-    robot_control_launch = IncludeLaunchDescription(
+    track_master_control_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
-                get_package_share_directory(pkg_name_ctrl), 'launch', 'robot_control.launch.py'
+                get_package_share_directory(pkg_name_ctrl), 'launch', 'track_master_control.launch.py'
             )
         )
     )
 
-    delayed_robot_control_launch = TimerAction(
+    delayed_track_master_control_launch = TimerAction(
         period=10.0,
-        actions=[robot_control_launch]
+        actions=[track_master_control_launch]
     )
 
     map_frame_publisher_node = Node(
@@ -45,6 +45,6 @@ def generate_launch_description():
    
     return LaunchDescription([
         gazebo_launch,
-        delayed_robot_control_launch,
+        delayed_track_master_control_launch,
         map_frame_publisher_node
     ])

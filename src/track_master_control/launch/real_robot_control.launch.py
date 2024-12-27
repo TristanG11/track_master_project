@@ -21,7 +21,7 @@ def generate_launch_description():
     # !!! MAKE SURE YOU SET THE PACKAGE NAME CORRECTLY !!!
 
     pkg_name_des='track_master' #<--- CHANGE ME
-    pkg_name_ctrl = 'robot_control'
+    pkg_name_ctrl = 'track_master_control'
 
     rsp = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(

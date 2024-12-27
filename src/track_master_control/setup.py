@@ -2,7 +2,7 @@ from setuptools import setup
 import os
 from glob import glob
 
-package_name = 'robot_control'
+package_name = 'track_master_control'
 
 setup(
     name=package_name,

@@ -8,7 +8,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
 
-    pkg_name_ctrl = 'robot_control'
+    pkg_name_ctrl = 'track_master_control'
     
 
     robot_control_launch = IncludeLaunchDescription(

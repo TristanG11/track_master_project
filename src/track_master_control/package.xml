@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <!-- Informations générales -->
-  <name>robot_control</name>
+  <name>track_master_control</name>
   <version>0.0.0</version>
   <description>Package for controlling a differential drive robot using ROS 2.</description>
   <maintainer email="tristanogandagaguerick@gmail.com">Tristan Guerick Agoumbi Ogandaga</maintainer>
