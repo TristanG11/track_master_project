@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>eps32_serial_interface_rs</name>
+  <name>esp32_serial_interface_rs</name>
   <version>0.1.0</version>
   <description>
     A ROS 2 package written in Rust.
@@ -12,8 +12,6 @@
   <buildtool_depend>ament_cargo</buildtool_depend>
   <build_depend>rclrs</build_depend>
   <build_depend>std_msgs</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>sensor_msgs</build_depend>
   <build_depend>builtin_interfaces</build_depend>
   <build_depend>ament_cmake</build_depend>
   <build_depend>colcon-cargo</build_depend>

@@ -12,15 +12,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arduino_serial_interface_rs"
-version = "0.1.0"
-dependencies = [
- "msg_utils",
- "rclrs",
- "serialport",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -124,6 +115,15 @@ checksum = "33d852cb9b869c2a9b3df2f71a3074817f01e1844f839a144f5fcef059a4eb5d"
 dependencies = [
  "libc",
  "windows-sys",
+]
+
+[[package]]
+name = "esp32_serial_interface_rs"
+version = "0.1.0"
+dependencies = [
+ "msg_utils",
+ "rclrs",
+ "serialport",
 ]
 
 [[package]]
@@ -718,6 +718,10 @@ version = "1.2.1"
 [[patch.unused]]
 name = "nav_msgs"
 version = "4.2.4"
+
+[[patch.unused]]
+name = "nmea_gnss_rs"
+version = "0.1.0"
 
 [[patch.unused]]
 name = "rcl_interfaces"

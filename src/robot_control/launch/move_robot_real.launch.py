@@ -9,6 +9,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def generate_launch_description():
 
     pkg_name_ctrl = 'robot_control'
+    
 
     robot_control_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -26,8 +27,17 @@ def generate_launch_description():
         )
     )
 
+    hardware_serial_node = Node(
+        package='esp32_serial_interface_rs',
+        executable='esp32_serial_interface_node',
+        name='esp32_serial_interface_node',
+        output='screen',
+        #parameters=[]
+    )
+
 
     return LaunchDescription([
         robot_control_launch,
         joystick_control_launch,
+        hardware_serial_node,
     ])
