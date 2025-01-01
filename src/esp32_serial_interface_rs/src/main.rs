@@ -20,7 +20,7 @@ fn main() {
 
     // Initialize the ROS 2 context
     let context = rclrs::Context::new(std::env::args()).unwrap();
-    let node = rclrs::create_node(&context, "arduino_serial_interface_node").unwrap();
+    let node = rclrs::create_node(&context, "esp32_serial_interface_node").unwrap();
 
     // Create a subscriber for the topic /cmd_vel_to_send
     let _subscription = node

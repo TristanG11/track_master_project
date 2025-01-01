@@ -26,47 +26,59 @@ impl Encoder {
         pin_a: impl Peripheral<P = impl InputPin> + 'static,
         pin_b: impl Peripheral<P = impl InputPin> + 'static,
     ) -> Result<Self, EspError> {
-        let mut unit = PcntDriver::new(
+        let mut unit = match PcntDriver::new(
             pcnt,
             Some(pin_a),
             Some(pin_b),
             Option::<AnyInputPin>::None,
             Option::<AnyInputPin>::None,
-        )?;
-        
+        ) {
+            Ok(unit) => unit,
+            Err(e) => return Err(e),
+        };
+
         // Configure the first channel of the PCNT unit
-        unit.channel_config(
+        if let Err(e) = unit.channel_config(
             PcntChannel::Channel0,
             PinIndex::Pin0,
             PinIndex::Pin1,
             &PcntChannelConfig {
-                lctrl_mode: PcntControlMode::Reverse, // Count in reverse direction
-                hctrl_mode: PcntControlMode::Keep,   // Keep the current count direction
-                pos_mode: PcntCountMode::Decrement,  // Decrement on positive edge
-                neg_mode: PcntCountMode::Increment,  // Increment on negative edge
-                counter_h_lim: HIGH_LIMIT,           // Set the high limit
-                counter_l_lim: LOW_LIMIT,            // Set the low limit
+                lctrl_mode: PcntControlMode::Reverse,
+                hctrl_mode: PcntControlMode::Keep,
+                pos_mode: PcntCountMode::Decrement,
+                neg_mode: PcntCountMode::Increment,
+                counter_h_lim: HIGH_LIMIT,
+                counter_l_lim: LOW_LIMIT,
             },
-        )?;
-        
+        ) {
+            return Err(e);
+        }
+
         // Configure the second channel of the PCNT unit
-        unit.channel_config(
+        if let Err(e) = unit.channel_config(
             PcntChannel::Channel1,
             PinIndex::Pin1,
             PinIndex::Pin0,
             &PcntChannelConfig {
-                lctrl_mode: PcntControlMode::Reverse, // Count in reverse direction
-                hctrl_mode: PcntControlMode::Keep,   // Keep the current count direction
-                pos_mode: PcntCountMode::Increment,  // Increment on positive edge
-                neg_mode: PcntCountMode::Decrement,  // Decrement on negative edge
-                counter_h_lim: HIGH_LIMIT,           // Set the high limit
-                counter_l_lim: LOW_LIMIT,            // Set the low limit
+                lctrl_mode: PcntControlMode::Reverse,
+                hctrl_mode: PcntControlMode::Keep,
+                pos_mode: PcntCountMode::Increment,
+                neg_mode: PcntCountMode::Decrement,
+                counter_h_lim: HIGH_LIMIT,
+                counter_l_lim: LOW_LIMIT,
             },
-        )?;
+        ) {
+            return Err(e);
+        }
 
         // Set the filter value and enable the filter
-        unit.set_filter_value(min(10 * 80, 1023))?;
-        unit.filter_enable()?;
+        if let Err(e) = unit.set_filter_value(min(10 * 80, 1023)) {
+            return Err(e);
+        }
+
+        if let Err(e) = unit.filter_enable() {
+            return Err(e);
+        }
 
         let total_ticks = Arc::new(AtomicI32::new(0));
         let last_total_ticks = Arc::new(AtomicI32::new(0));
@@ -77,25 +89,37 @@ impl Encoder {
         // This is useful for odometry in a wheeled robot
         unsafe {
             let approx_value = approx_value.clone();
-            unit.subscribe(move |status| {
+            if let Err(e) = unit.subscribe(move |status| {
                 let status = PcntEventType::from_repr_truncated(status);
                 if status.contains(PcntEvent::HighLimit) {
-                    approx_value.fetch_add(HIGH_LIMIT as i32, Ordering::SeqCst); // Handle high limit overflow
+                    approx_value.fetch_add(HIGH_LIMIT as i32, Ordering::SeqCst);
                 }
                 if status.contains(PcntEvent::LowLimit) {
-                    approx_value.fetch_add(LOW_LIMIT as i32, Ordering::SeqCst); // Handle low limit overflow
+                    approx_value.fetch_add(LOW_LIMIT as i32, Ordering::SeqCst);
                 }
-            })?;
+            }) {
+                return Err(e);
+            }
         }
 
         // Enable interrupts for high and low limit events
-        unit.event_enable(PcntEvent::HighLimit)?;
-        unit.event_enable(PcntEvent::LowLimit)?;
+        if let Err(e) = unit.event_enable(PcntEvent::HighLimit) {
+            return Err(e);
+        }
+        if let Err(e) = unit.event_enable(PcntEvent::LowLimit) {
+            return Err(e);
+        }
 
         // Initialize the PCNT unit: pause, clear counter, and resume
-        unit.counter_pause()?;
-        unit.counter_clear()?;
-        unit.counter_resume()?;
+        if let Err(e) = unit.counter_pause() {
+            return Err(e);
+        }
+        if let Err(e) = unit.counter_clear() {
+            return Err(e);
+        }
+        if let Err(e) = unit.counter_resume() {
+            return Err(e);
+        }
 
         Ok(Self {
             unit,
@@ -106,28 +130,33 @@ impl Encoder {
     }
 
     // Get the current value of the encoder and update total ticks
-    pub fn get_value(&self) {
-        let value = self.approx_value.load(Ordering::Relaxed)
-            + self.unit.get_counter_value().unwrap() as i32;
-        self.total_ticks.store(value, Ordering::Relaxed);
+    pub fn get_value(&self) -> Result<(), EspError> {
+        match self.unit.get_counter_value() {
+            Ok(counter_value) => {
+                let value = self.approx_value.load(Ordering::Relaxed) + counter_value as i32;
+                self.total_ticks.store(value, Ordering::Relaxed);
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
     }
 
     // Compute the speed of the motor in radians per second
-    pub fn compute_speed(&mut self) -> f32 {
-        self.get_value(); // Update the total ticks
+    pub fn compute_speed(&mut self) -> Result<f32, EspError> {
+        match self.get_value() {
+            Ok(_) => {
+                let delta_ticks = (self.total_ticks.load(Ordering::Relaxed)
+                    - self.last_total_ticks.load(Ordering::Relaxed))
+                    / 4;
 
-        // Calculate the change in ticks since the last measurement
-        let delta_ticks = (self.total_ticks.load(Ordering::Relaxed)
-            - self.last_total_ticks.load(Ordering::Relaxed))
-            / 4; // Divide by 4 for quadrature decoding
+                let speed = delta_ticks as f32 * RAD_PER_TICK / TIMER_FREQUENCY_SEC;
 
-        // Compute the speed using the delta ticks and constants
-        let speed = delta_ticks as f32 * RAD_PER_TICK / TIMER_FREQUENCY_SEC;
+                self.last_total_ticks
+                    .store(self.total_ticks.load(Ordering::Relaxed), Ordering::Relaxed);
 
-        // Update the last total ticks for the next computation
-        self.last_total_ticks
-            .store(self.total_ticks.load(Ordering::Relaxed), Ordering::Relaxed);
-        
-        speed
+                Ok(speed)
+            }
+            Err(e) => Err(e),
+        }
     }
 }

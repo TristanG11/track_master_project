@@ -18,91 +18,153 @@ impl MotorController {
     }
 
     /// Adds a motor to the controller
-    pub fn add_motor(&mut self, motor: Motor) {
-        self.motors
-            .lock()
-            .unwrap()
-            .insert(motor.name.clone(), motor);
+    pub fn add_motor(&mut self, motor: Motor) -> Result<(), String> {
+        if let Ok(mut motors) = self.motors.lock() {
+            motors.insert(motor.name.clone(), motor);
+            Ok(())
+        } else {
+            Err("Failed to acquire lock while adding motor".to_string())
+        }
     }
 
     /// Changes the PID gains for a specific motor
-    pub fn change_pid_gain(&mut self, name: &String, kp: f32, ki: f32, kd: f32) {
-        let mut motors = self.motors.lock().unwrap();
-        if let Some(motor) = motors.get_mut(name) {
-            motor.pid.kd = kd;
-            motor.pid.kp = kp;
-            motor.pid.ki = ki;
+    pub fn change_pid_gain(
+        &mut self,
+        name: &String,
+        kp: f32,
+        ki: f32,
+        kd: f32,
+    ) -> Result<(), String> {
+        if let Ok(mut motors) = self.motors.try_lock() {
+            if let Some(motor) = motors.get_mut(name) {
+                motor.pid.kp = kp;
+                motor.pid.ki = ki;
+                motor.pid.kd = kd;
+                Ok(())
+            } else {
+                Err(format!("Motor '{}' not found", name))
+            }
+        } else {
+            Err("Failed to acquire lock while changing PID gains".to_string())
         }
     }
 
     /// Returns feedback from all motors as a formatted string
-    pub fn get_feedback(&self) -> String {
-        let motors = self.motors.lock().unwrap();
-        let mut feedback = String::from("<FB=");
-
-        for (name, motor) in motors.iter() {
-            feedback.push_str(&format!(
-                "{},{},{};",
-                name, motor.state.position, motor.state.speed,
-            ));
+    pub fn get_feedback(&self) -> Result<String, String> {
+        if let Ok(motors) = self.motors.lock() {
+            let mut feedback = String::from("<FB=");
+            for (name, motor) in motors.iter() {
+                feedback.push_str(&format!(
+                    "{},{},{};",
+                    name, motor.state.position, motor.state.speed,
+                ));
+            }
+            feedback.push('>');
+            Ok(feedback)
+        } else {
+            Err("Failed to acquire lock while getting feedback".to_string())
         }
-
-        feedback.push('>');
-        feedback
     }
 
     /// Sets up a timer for periodic tasks
-    pub fn setup_timer(&mut self, timer: &mut TimerDriver, tx: Arc<Queue<bool>>) {
+    pub fn setup_timer(
+        &mut self,
+        timer: &mut TimerDriver,
+        tx: Arc<Queue<bool>>,
+    ) -> Result<(), String> {
         let freq_as_us = TIMER_FREQUENCY_SEC * 1_000_000_f32; // Convert frequency to microseconds
-        timer.set_alarm(freq_as_us as u64).unwrap();          // Set the alarm period
-        timer.enable_interrupt().unwrap();                   // Enable timer interrupt
-        timer.enable_alarm(true).unwrap();                   // Enable the alarm
-        unsafe {
-            timer
-                .subscribe(move || {
-                    tx.send_front(true, 5).unwrap(); // Send a signal to the queue
-                })
-                .unwrap();
+
+        // Set the alarm period
+        if let Err(e) = timer.set_alarm(freq_as_us as u64) {
+            return Err(format!("Failed to set alarm: {}", e));
         }
-        timer.enable_interrupt().unwrap();
-        timer.enable(true).unwrap();
+
+        // Enable timer interrupt
+        if let Err(e) = timer.enable_interrupt() {
+            return Err(format!("Failed to enable interrupt: {}", e));
+        }
+
+        // Enable the alarm
+        if let Err(e) = timer.enable_alarm(true) {
+            return Err(format!("Failed to enable alarm: {}", e));
+        }
+
+        // Set up the interrupt subscription
+        unsafe {
+            if let Err(e) = timer.subscribe(move || {
+                if let Err(err) = tx.send_front(true, 5) {
+                    eprintln!("Failed to send signal to queue: {}", err);
+                }
+            }) {
+                return Err(format!("Failed to subscribe to timer: {}", e));
+            }
+        }
+
+        // Enable timer interrupt again
+        if let Err(e) = timer.enable_interrupt() {
+            return Err(format!("Failed to enable interrupt: {}", e));
+        }
+
+        // Start the timer
+        if let Err(e) = timer.enable(true) {
+            return Err(format!("Failed to start the timer: {}", e));
+        }
+
+        Ok(())
     }
 
     /// Handles incoming commands to update motor states
     pub fn handle_command(&mut self, cmd: &String) -> Result<(), String> {
         if !cmd.starts_with('<') || !cmd.ends_with('>') {
-            return Err(String::from("Error: missing < or > in stream"));
+            return Err("Error: missing < or > in stream".to_string());
         }
-        if cmd.contains("CMD"){
+        if cmd.contains("CMD") {
             let cmd_body = &cmd[5..cmd.len() - 1]; // Remove '<' and '>' from the command
 
-            let mut motors = self.motors.lock().unwrap();
-            for segment in cmd_body.split(';') {
-                if let Some((name, value)) = segment.split_once(':') {
-                    if let Ok(desired_speed) = value.trim().parse::<f32>() {
-                        if let Some(motor) = motors.get_mut(name.trim()) {
-                            motor.state.set_desired_speed(desired_speed); // Update desired speed
+            if let Ok(mut motors) = self.motors.lock() {
+                for segment in cmd_body.split(';') {
+                    if let Some((name, value)) = segment.split_once(':') {
+                        if let Ok(desired_speed) = value.trim().parse::<f32>() {
+                            if let Some(motor) = motors.get_mut(name.trim()) {
+                                motor.state.set_desired_speed(desired_speed); // Update desired speed
+                            } else {
+                                return Err(format!("<Error: motor '{}' not found>", name));
+                            }
                         } else {
-                            return Err(format!("<Error: motor '{}' not found>", name));
+                            return Err(format!("<Error: invalid speed value '{}'>", value));
                         }
                     } else {
-                        return Err(format!("<Error: invalid speed value '{}'>", value));
+                        return Err(format!("<Error: invalid segment '{}'>", segment));
                     }
-                } else {
-                    return Err(format!("<Error: invalid segment '{}'>", segment));
                 }
+            } else {
+                return Err("Failed to acquire lock while handling command".to_string());
             }
         }
-        
 
         Ok(())
     }
 
     /// Processes all motors by updating their states and applying commands
-    pub fn process_motors(&mut self) {
-        for (_, motor) in self.motors.lock().unwrap().iter_mut() {
-            motor.state.cmd = motor.compute_control(); // Compute the control command
-            motor.set_cmd();                           // Apply the command to the motor
+    pub fn process_motors(&mut self) -> Result<(), String> {
+        if let Ok(mut motors) = self.motors.lock() {
+            for (_, motor) in motors.iter_mut() {
+                match motor.compute_control() {
+                    Ok(control) => {
+                        motor.state.cmd = control; // Set the computed control command
+                    }
+                    Err(e) => {
+                        return Err(format!("Failed to compute control for motor: {}", e));
+                    }
+                }
+
+                if let Err(e) = motor.set_cmd() {
+                    return Err(format!("Failed to set command for motor: {}", e));
+                }
+            }
+            Ok(())
+        } else {
+            Err("Failed to acquire lock on motors".to_string())
         }
     }
 }

@@ -18,10 +18,10 @@ pub enum Direction {
 
 // Structure to represent the state of the motor
 pub struct MotorState {
-    pub position: f32,          // Current position in radians
-    pub speed: f32,             // Measured speed in rad/s
-    pub desired_speed: f32,     // Desired speed in rad/s
-    pub cmd: f32,               // PWM command
+    pub position: f32,      // Current position in radians
+    pub speed: f32,         // Measured speed in rad/s
+    pub desired_speed: f32, // Desired speed in rad/s
+    pub cmd: f32,           // PWM command
 }
 
 impl MotorState {
