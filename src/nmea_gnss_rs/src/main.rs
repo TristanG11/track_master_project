@@ -1,40 +1,72 @@
 use std::io::{BufRead, BufReader};
 use sensor_msgs::msg::NavSatFix;
-use rclrs;
+use rclrs::MandatoryParameter;
 use serialport;
 use nmea_parser::{NmeaParser, ParsedMessage, gnss::GgaQualityIndicator};
 use msg_utils::msg::GpsVelocityHeading;
 use geometry_msgs::msg::{PoseWithCovarianceStamped, TwistWithCovarianceStamped};
 use map_3d::{Ellipsoid::WGS84,geodetic2enu};
+use std::sync::Arc;
 
 fn main() {
-    let port = serialport::new("/dev/ttyUSB0", 38400)
+
+    let context = rclrs::Context::new(std::env::args()).unwrap();
+    let node = rclrs::create_node(&context, "nmea_gnss_node_rs").unwrap();
+
+    let serial_port:  MandatoryParameter<Arc<str>> =
+        node.declare_parameter("serial_port").default(Arc::from("/dev/ttyUSB0")).mandatory().unwrap();
+
+    let baud_rate: MandatoryParameter<i64> =
+        node.declare_parameter("baud_rate").default(38400).mandatory().unwrap();
+
+    let lat0=
+        node.declare_parameter("lat0").default(45.1884999).mandatory().unwrap();
+
+    let lon0=
+        node.declare_parameter("lon0").default(5.7588211).mandatory().unwrap();
+
+    let alt0 =
+        node.declare_parameter("alt0").default(0.0).mandatory().unwrap();
+
+    let gnss_fix_topic: MandatoryParameter<Arc<str>> =
+        node.declare_parameter("gnss_fix_topic").default(Arc::from("/gnss/fix")).mandatory().unwrap();
+
+    let heading_vel_topic: MandatoryParameter<Arc<str>>  =
+        node.declare_parameter("heading_vel_topic").default(Arc::from("/gnss/heading_vel")).mandatory().unwrap();
+
+    let twist_topic: MandatoryParameter<Arc<str>>  =
+        node.declare_parameter("twist_topic").default(Arc::from("/gnss/twist")).mandatory().unwrap();
+
+    let pose_topic: MandatoryParameter<Arc<str>> =
+        node.declare_parameter("pose_topic").default(Arc::from("/gnss/pose")).mandatory().unwrap();
+
+    let gnss_fix_pub = node
+        .create_publisher::<NavSatFix>(&gnss_fix_topic.get(), rclrs::QoSProfile::default())
+        .unwrap();
+    let heading_vel_pub = node
+        .create_publisher::<GpsVelocityHeading>(&heading_vel_topic.get(), rclrs::QoSProfile::default())
+        .unwrap();
+
+    let twist_pub = node
+        .create_publisher::<TwistWithCovarianceStamped>(&twist_topic.get(), rclrs::QoSProfile::default())
+        .unwrap();
+
+    let pose_pub = node
+        .create_publisher::<PoseWithCovarianceStamped>(&pose_topic.get(), rclrs::QoSProfile::default())
+        .unwrap();
+
+    let mut pose_msg = PoseWithCovarianceStamped::default();
+    let port = serialport::new(& *serial_port.get(), baud_rate.get() as u32)
         .timeout(std::time::Duration::from_secs(2))
         .open()
         .expect("Impossible d'ouvrir le port série");
 
-    let context = rclrs::Context::new(std::env::args()).unwrap();
-    let node = rclrs::create_node(&context, "nmea_gnss_node_rs").unwrap();
-    let gnss_fix_pub = node
-        .create_publisher::<NavSatFix>("/gnss/fix", rclrs::QoSProfile::default())
-        .unwrap();
-    let heading_vel_pub = node
-        .create_publisher::<GpsVelocityHeading>("/gnss/heading_vel", rclrs::QoSProfile::default())
-        .unwrap();
-
-    let twist_pub = node
-        .create_publisher::<TwistWithCovarianceStamped>("/gnss/twist", rclrs::QoSProfile::default())
-        .unwrap();
-
-    let pose_pub = node
-        .create_publisher::<PoseWithCovarianceStamped>("/gnss/pose", rclrs::QoSProfile::default())
-        .unwrap();
-
-    //let mut first_pose = (0.0,0.0,0.0);
-    //let mut is_first_pose_fetched: bool = false;
-    let mut pose_msg = PoseWithCovarianceStamped::default();
-
-    let (lat0,lon0,alt0) = (45.1884999,5.7588211,0.0);
+        let (lat0, lon0, alt0) = (lat0.get().to_radians(), lon0.get().to_radians(), alt0.get());
+        println!(
+            "Coordonnées d'ancrage : lat0={}, lon0={}, alt0={}",
+            lat0, lon0, alt0
+        );
+        
     let mut parser = NmeaParser::new();
     let mut reader = BufReader::new(port);
 
@@ -96,8 +128,8 @@ fn main() {
 
                                 // convert to enu 
 
-                                let (x,y,z) = geodetic2enu(fix_msg.latitude, fix_msg.longitude, fix_msg.altitude, lat0, lon0, alt0, WGS84);
-                                
+                                let (x,y,z) = geodetic2enu(fix_msg.latitude.to_radians(), fix_msg.longitude.to_radians(), fix_msg.altitude, lat0, lon0, alt0, WGS84);
+
                                 pose_msg.header.frame_id = std::string::String::from("map");
                                 pose_msg.pose.pose.position.x = x;
                                 pose_msg.pose.pose.position.y = y;
@@ -154,3 +186,5 @@ fn main() {
 
     println!("Fin du programme.");
 }
+
+

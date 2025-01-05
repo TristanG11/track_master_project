@@ -16,3 +16,7 @@ map_3d = "0.1.5"
 [[bin]]
 name = "nmea_gnss_node"
 path = "src/main.rs"
+
+
+[package.metadata.ros]
+install_to_share = ["launch","config"]

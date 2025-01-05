@@ -1,7 +1,9 @@
 use msg_utils::msg::{ BatteryStatus, FourMotorsFeedback, FourMotorsStatus, WheelCommands};
-use rclrs::{Publisher, Subscription};
+use rclrs;
 use std::sync::{Arc, Mutex};
-
+use diagnostic_msgs::msg::{DiagnosticArray,DiagnosticStatus,KeyValue};
+use std::sync::mpsc;
+use std::time::Duration;
 enum MessageType {
     Error(()),
     Feedback(()),
@@ -10,17 +12,66 @@ enum MessageType {
 }
 
 fn main() {
-    // Initialize the serial port
-    let serial_port = serialport::new("/dev/ttyUSB0", 115200)
-        .timeout(std::time::Duration::from_secs(2))
-        .open()
-        .expect("Unable to open the serial port");
-
-    let serial_port = Arc::new(Mutex::new(serial_port));
 
     // Initialize the ROS 2 context
     let context = rclrs::Context::new(std::env::args()).unwrap();
     let node = rclrs::create_node(&context, "esp32_serial_interface_node").unwrap();
+
+
+    //Diagnostics part : 
+    let (diag_tx,diag_rx) = mpsc::channel::<DiagnosticStatus>();
+
+    // Initialize the serial port
+    let serial_port = {
+        let mut serial_port = None;
+        let mut count = 0;
+
+        while count < 5 {
+            match serialport::new("/dev/ttyUSB0", 115200)
+                .timeout(Duration::from_secs(2))
+                .open()
+            {
+                Ok(port) => {
+                    serial_port = Some(port);
+                    break;
+                }
+                Err(e) => {
+                    eprintln!("Failed to open serial port: {} (Attempt {}/{})", e, count + 1, 5);
+                    count += 1;
+                    std::thread::sleep(Duration::from_secs(10)); // Wait 10 seconds before retrying
+                }
+            }
+        }
+
+        if serial_port.is_none() {
+            // If all attempts failed, send a diagnostic message
+            let mut diag_status = DiagnosticStatus::default();
+            diag_status.level = DiagnosticStatus::ERROR;
+            diag_status.name = "Serial Port Initialization".to_string();
+            diag_status.message = "Failed to open the serial port after 5 attempts.".to_string();
+            diag_status.hardware_id = "".to_string();
+            diag_status.values.push(KeyValue {
+                key: "Attempts".to_string(),
+                value: "5".to_string(),
+            });
+            diag_status.values.push(KeyValue {
+                key: "Delay (secs)".to_string(),
+                value: "10".to_string(),
+            });
+            loop {
+                diag_tx.send(diag_status.clone()).unwrap();
+                std::thread::sleep(Duration::from_secs(10));
+            }
+            
+        }
+
+        serial_port
+    };
+        
+
+    let serial_port = Arc::new(Mutex::new(serial_port));
+
+    
 
     // Create a subscriber for the topic /cmd_vel_to_send
     let _subscription = node
@@ -43,6 +94,7 @@ fn main() {
 
                     if let Ok(mut port) = serial_port.lock() {
                         // Check available space in the buffer before writing
+                        if let Some(port) = &mut *port {
                         match port.bytes_to_write() {
                             Ok(bytes_pending) => {
                                 let space_available: i32 = buffer_size as i32 - bytes_pending as i32;
@@ -65,6 +117,7 @@ fn main() {
                             }
                             Err(e) => eprintln!("Error while checking available buffer space: {}", e),
                         }
+                    }
                     } else {
                         eprintln!("Error accessing the serial port");
                     }
@@ -99,6 +152,7 @@ fn main() {
             loop {
                 if let Ok(mut port) = serial_port.lock() {
                     let mut temp_buffer = [0; 256];
+                    if let Some(port) = &mut *port {
                     if let Ok(size) = port.read(&mut temp_buffer) {
                         buffer.extend_from_slice(&temp_buffer[..size]);
 
@@ -146,13 +200,28 @@ fn main() {
                         }
                     }
                 }
+                }
                 std::thread::sleep(std::time::Duration::from_millis(10)); // 25 Hz
             }
         });
     }
 
+
+    // Thread to process diagnostic messages
+    let _diagnostics_thread = {
+        std::thread::spawn(move || {
+            while let Ok(diag) = diag_rx.recv() {
+                println!(
+                    "Diagnostic Message - Name: {}, Level: {}, Message: {}",
+                    diag.name, diag.level, diag.message
+                );
+            }
+        })
+    };
+
     // Spin to keep the ROS 2 node active
     rclrs::spin(node).unwrap();
+
 }
 
 // Determine the type of message

@@ -102,6 +102,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
+name = "diagnostic_msgs"
+version = "4.2.4"
+dependencies = [
+ "builtin_interfaces",
+ "rosidl_runtime_rs",
+ "std_msgs",
+]
+
+[[package]]
 name = "either"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -121,6 +130,7 @@ dependencies = [
 name = "esp32_serial_interface_rs"
 version = "0.1.0"
 dependencies = [
+ "diagnostic_msgs",
  "msg_utils",
  "rclrs",
  "serialport",
@@ -688,8 +698,8 @@ name = "composition_interfaces"
 version = "1.2.1"
 
 [[patch.unused]]
-name = "diagnostic_msgs"
-version = "4.2.4"
+name = "esp32_serial_interface_rs"
+version = "0.1.0"
 
 [[patch.unused]]
 name = "example_interfaces"
