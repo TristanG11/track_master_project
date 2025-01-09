@@ -19,7 +19,7 @@ fn main() {
     let baud_rate: MandatoryParameter<i64> =
         node.declare_parameter("baud_rate").default(38400).mandatory().unwrap();
 
-    let lat0=
+    let lat0 =
         node.declare_parameter("lat0").default(45.1884999).mandatory().unwrap();
 
     let lon0=
@@ -96,13 +96,6 @@ fn main() {
                                     GgaQualityIndicator::DGpsFix => 2,  // STATUS_DGPS_FIX
                                     _ => -1,                // Default to no fix
                                 };
-
-                                /*if msg.status.status >= 0 && !is_first_pose_fetched{
-                                    first_pose.0 = msg.latitude;
-                                    first_pose.1 = msg.longitude;
-                                    first_pose.2 = msg.altitude;
-                                    is_first_pose_fetched = true;
-                                }*/
 
                                 // Satellite count as additional diagnostic info
                                 fix_msg.status.service = 1; // SERVICE_GPS

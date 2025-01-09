@@ -1,9 +1,8 @@
 use msg_utils::msg::{ BatteryStatus, FourMotorsFeedback, FourMotorsStatus, WheelCommands};
-use rclrs;
 use std::sync::{Arc, Mutex};
 use diagnostic_msgs::msg::{DiagnosticArray,DiagnosticStatus,KeyValue};
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 enum MessageType {
     Error(()),
     Feedback(()),
@@ -20,7 +19,7 @@ fn main() {
 
     //Diagnostics part : 
     let (diag_tx,diag_rx) = mpsc::channel::<DiagnosticStatus>();
-
+    
     // Initialize the serial port
     let serial_port = {
         let mut serial_port = None;
@@ -59,12 +58,30 @@ fn main() {
                 value: "10".to_string(),
             });
             loop {
-                diag_tx.send(diag_status.clone()).unwrap();
+                if let Err(e) = diag_tx.send(diag_status.to_owned()) {
+                    eprintln!("{}",e);
+                }
                 std::thread::sleep(Duration::from_secs(10));
             }
             
+        } else {
+            let diag_status = DiagnosticStatus{
+                level : DiagnosticStatus::OK,
+                name : "Serial port state".to_string(),
+                message: "Port is open and functionning normally".to_string(),
+                hardware_id : "".to_string(),
+                values : vec![KeyValue {
+                    key : "Last sending time".to_string(),
+                    value : "No timestamp".to_string(),
+                }, KeyValue{
+                    key : "Last received time".to_string(),
+                    value : "No timestamp".to_string(),
+                }]
+            };
+            if let Err(e) = diag_tx.send(diag_status) {
+                eprintln!("{}",e);
+            }
         }
-
         serial_port
     };
         
@@ -83,6 +100,8 @@ fn main() {
                 let buffer_size: u32 = 256; // Buffer size on Arduino
                 let min_free_space: u32 = 64; // Minimum required space before writing
                 let max_buffer_size: u32 = 64; // Maximum allowed send size
+                let diag_tx = diag_tx.clone();
+                let mut last_sending_time: Option<std::time::Instant> = None;
                 move |msg: WheelCommands| {
                     let command = format!(
                         "<CMD=fl:{:.2};fr:{:.2};rl:{:.2};rr:{:.2}>",
@@ -100,26 +119,115 @@ fn main() {
                                 let space_available: i32 = buffer_size as i32 - bytes_pending as i32;
                                 if bytes_pending > max_buffer_size {
                                     println!("Too many data in the send buffer. Ignoring the command.");
+                                    send_diagnostic(
+                                        &diag_tx,
+                                        DiagnosticStatus::WARN,
+                                        "Command Ignored".to_string(),
+                                        "Send buffer is full".to_string(),
+                                        vec![KeyValue {
+                                            key: "Bytes Pending".to_string(),
+                                            value: bytes_pending.to_string(),
+                                        }],
+                                    );
                                     return; // Ignore this command
                                 }
                                 if space_available >= min_free_space as i32 {
                                     // Write to the serial port
-                                    match port.write(command.as_bytes()) {
-                                        Ok(_) => { /* Command sent successfully */ }
-                                        Err(e) => eprintln!("Error while sending command to the serial port: {}", e),
+                                    match port.write_all(command.as_bytes()) {
+                                        Ok(_) => { /* Command sent successfully */
+                                            last_sending_time = Some(Instant::now());
+                                            // Send diagnostic for successful command
+                                            send_diagnostic(
+                                                &diag_tx,
+                                                DiagnosticStatus::OK,
+                                                "Command Sent".to_string(),
+                                                "Command sent to serial port successfully"
+                                                    .to_string(),
+                                                vec![
+                                                    KeyValue {
+                                                        key: "Last Sending Time".to_string(),
+                                                        value: format!(
+                                                            "{:?} ms",
+                                                            last_sending_time.unwrap().elapsed().as_millis()
+                                                        ),
+                                                    },
+                                                    KeyValue {
+                                                        key: "Command".to_string(),
+                                                        value: command.clone(),
+                                                    },
+                                                ],
+                                            );
+
+                                        }
+                                        Err(e) => {
+                                            eprintln!("Error while sending command to the serial port: {}", e);
+                                            // Send diagnostic for failed command
+                                            send_diagnostic(
+                                                &diag_tx,
+                                                DiagnosticStatus::ERROR,
+                                                "Command Send Failed".to_string(),
+                                                format!(
+                                                    "Failed to send command: {}",
+                                                    e.to_string()
+                                                ),
+                                                vec![KeyValue {
+                                                    key: "Error".to_string(),
+                                                    value: e.to_string(),
+                                                }],
+                                            );}
                                     }
                                 } else {
                                     println!(
                                         "Insufficient space in the buffer. Available: {} bytes, Required: {} bytes",
                                         space_available, min_free_space
                                     );
+                                    // Send diagnostic for insufficient buffer space
+                                    send_diagnostic(
+                                        &diag_tx,
+                                        DiagnosticStatus::WARN,
+                                        "Insufficient Buffer Space".to_string(),
+                                        "Not enough space in the serial buffer".to_string(),
+                                        vec![
+                                            KeyValue {
+                                                key: "Available Space".to_string(),
+                                                value: space_available.to_string(),
+                                            },
+                                            KeyValue {
+                                                key: "Required Space".to_string(),
+                                                value: min_free_space.to_string(),
+                                            },
+                                        ],
+                                    );
                                 }
                             }
-                            Err(e) => eprintln!("Error while checking available buffer space: {}", e),
+                            Err(e) => {
+                                eprintln!("Error while checking available buffer space: {}", e);
+                                send_diagnostic(
+                                    &diag_tx,
+                                    DiagnosticStatus::ERROR,
+                                    "Buffer Check Failed".to_string(),
+                                    format!(
+                                        "Error checking available buffer space: {}",
+                                        e.to_string()
+                                    ),
+                                    vec![KeyValue {
+                                        key: "Error".to_string(),
+                                        value: e.to_string(),
+                                    }],
+                                );
+                            }
                         }
                     }
                     } else {
                         eprintln!("Error accessing the serial port");
+                        // Send diagnostic for port access error
+                        send_diagnostic(
+                            &diag_tx,
+                            DiagnosticStatus::ERROR,
+                            "Serial Port Access Failed".to_string(),
+                            "Failed to access the serial port".to_string(),
+                            vec![],
+                        );
                     }
                 }
             },
@@ -136,6 +244,7 @@ fn main() {
     let battery_status_publisher = node
         .create_publisher::<BatteryStatus>("/battery_status", rclrs::QoSProfile::default())
         .unwrap();
+    let diag_publisher = node.create_publisher::<DiagnosticArray>("/diagnostics",rclrs::QoSProfile::default()).unwrap();
 
     let _t: std::thread::JoinHandle<()>;
     {
@@ -146,6 +255,10 @@ fn main() {
         let motor_status_publisher = motor_status_publisher.clone();
         let battery_status_publisher = battery_status_publisher.clone();
         let node = node.clone();
+        let mut last_feedback_rcv: Option<std::time::Instant> =None;
+        let mut last_status_rcv: Option<std::time::Instant> = None;
+        let mut last_error_status_rcv: Option<std::time::Instant>  = None;
+        let diag_tx = diag_tx.clone();
 
         _t = std::thread::spawn(move || {
             let mut buffer = Vec::new();
@@ -171,13 +284,27 @@ fn main() {
                                 match message_type {
                                     MessageType::Error(()) => {
                                         eprintln!("Error detected: {}", original_line);
+                                        last_error_status_rcv = Some(std::time::Instant::now());
+                                        send_diagnostic(
+                                            &diag_tx,
+                                            DiagnosticStatus::ERROR,
+                                            "Error Message Received".to_string(),
+                                            format!("Error detected: {}", original_line),
+                                            vec![KeyValue {
+                                                key: "Timestamp".to_string(),
+                                                value: format!("{:?}", last_error_status_rcv.unwrap()),
+                                            }],
+                                        );
                                     }
                                     MessageType::Feedback(()) => {
                                         feedback_msg = parse_feedback(original_line); // Use the original line for parsing
+                                        last_feedback_rcv = Some(std::time::Instant::now());
                                         let now = node.get_clock().now().to_ros_msg().unwrap();
                                         feedback_msg.header.stamp.nanosec = now.nanosec;
                                         feedback_msg.header.stamp.sec = now.sec;
-                                        feedback_publisher.publish(&feedback_msg).unwrap();
+                                        if let Err(e) = feedback_publisher.publish(&feedback_msg){
+                                            eprintln!("{}",e);
+                                        }
                                     }
                                     MessageType::Status(()) => {
                                         (motors_status, battery_status) =
@@ -187,11 +314,40 @@ fn main() {
                                         motors_status.header.stamp.sec = now.sec;
                                         battery_status.header.stamp.sec = now.sec;
                                         battery_status.header.stamp.nanosec = now.nanosec;
-                                        motor_status_publisher.publish(&motors_status).unwrap();
-                                        battery_status_publisher.publish(&battery_status).unwrap();
+                                        if let Err(e) = motor_status_publisher.publish(&motors_status){
+                                            eprintln!("{}",e);
+                                        }
+                                        if let Err(e) = battery_status_publisher.publish(&battery_status){
+                                            eprintln!("{}",e);
+                                        }
+                                        last_status_rcv = Some(std::time::Instant::now());
+                                            send_diagnostic(
+                                                &diag_tx,
+                                                DiagnosticStatus::OK,
+                                                "Motor Status Received".to_string(),
+                                                "Motor status successfully received and published."
+                                                    .to_string(),
+                                                vec![KeyValue {
+                                                    key: "Last Motor Status Timestamp".to_string(),
+                                                    value: format!(
+                                                        "{:?} ms",
+                                                        last_status_rcv.unwrap().elapsed().as_millis()
+                                                    ),
+                                                }],
+                                            );
                                     }
                                     MessageType::Problematic(()) => {
                                         println!("Received problematic message: {}", original_line);
+                                        send_diagnostic(
+                                            &diag_tx,
+                                            DiagnosticStatus::WARN,
+                                            "Problematic Message".to_string(),
+                                            format!(
+                                                "Received problematic message: {}",
+                                                original_line
+                                            ),
+                                            vec![],
+                                        );
                                     }
                                 }
                             } else {
@@ -209,13 +365,19 @@ fn main() {
 
     // Thread to process diagnostic messages
     let _diagnostics_thread = {
+        let mut diag_array = DiagnosticArray::default();
+        let node = node.clone();
         std::thread::spawn(move || {
-            while let Ok(diag) = diag_rx.recv() {
-                println!(
-                    "Diagnostic Message - Name: {}, Level: {}, Message: {}",
-                    diag.name, diag.level, diag.message
-                );
+
+            loop {
+                while let Ok(diag) = diag_rx.try_recv() {
+                    diag_array.status.push(diag.clone());
+                }
+                diag_publisher.publish(diag_array.clone());
+                std::thread::sleep(Duration::from_millis(1000));
+                
             }
+            
         })
     };
 
@@ -291,7 +453,7 @@ fn parse_status(line: &str) -> (FourMotorsStatus, BatteryStatus) {
             battery_status.charging = parts.get(4).map(|v| *v == "1").unwrap_or(false);
         } else {
             let parts: Vec<&str> = segment.split(',').collect();
-            let motor_name = parts.get(0).unwrap_or(&"");
+            let motor_name = parts.first().unwrap_or(&"");
             let current = parts.get(1).and_then(|v| v.parse().ok()).unwrap_or(0.0);
             let voltage = parts.get(2).and_then(|v| v.parse().ok()).unwrap_or(0.0);
 
@@ -321,4 +483,24 @@ fn parse_status(line: &str) -> (FourMotorsStatus, BatteryStatus) {
         }
     }
     (motors_status, battery_status)
+}
+
+
+fn send_diagnostic(
+    diag_tx: &mpsc::Sender<DiagnosticStatus>,
+    level: u8,
+    name: String,
+    message: String,
+    values: Vec<KeyValue>,
+) {
+    let diag_status = DiagnosticStatus {
+        level,
+        name,
+        message,
+        hardware_id: "".to_string(),
+        values,
+    };
+    if let Err(e) = diag_tx.send(diag_status) {
+        eprintln!("Failed to send diagnostic: {}", e);
+    }
 }

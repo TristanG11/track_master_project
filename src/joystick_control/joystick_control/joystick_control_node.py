@@ -118,7 +118,6 @@ class JoystickControlNode(Node):
         else:
             return 0.0
 
-
     def update(self):
         if pygame.joystick.get_count() == 0:
             if self.joystick_connected:
