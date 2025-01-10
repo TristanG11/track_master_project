@@ -3,10 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@react-google-maps/api": "^2.20.5",
     "cra-template": "1.2.0",
+    "konva": "^9.3.18",
+    "leaflet": "^1.9.4",
     "react": "^19.0.0",
+    "react-battery-gauge": "^1.0.7",
     "react-dom": "^19.0.0",
     "react-joystick-component": "^6.2.1",
+    "react-konva": "^19.0.2",
+    "react-leaflet": "^5.0.0",
     "react-scripts": "5.0.1",
     "roslib": "^1.4.1",
     "web-vitals": "^4.2.4"

@@ -308,7 +308,7 @@ fn main() {
                                     }
                                     MessageType::Status(()) => {
                                         (motors_status, battery_status) =
-                                            parse_status(original_line); // Use the original line for parsing
+                                            parse_status(original_line,&feedback_msg); // Use the original line for parsing
                                         let now = node.get_clock().now().to_ros_msg().unwrap();
                                         motors_status.header.stamp.nanosec = now.nanosec;
                                         motors_status.header.stamp.sec = now.sec;
@@ -439,7 +439,7 @@ fn parse_feedback(line: &str) -> FourMotorsFeedback {
 }
 
 // Parse a status message
-fn parse_status(line: &str) -> (FourMotorsStatus, BatteryStatus) {
+fn parse_status(line: &str, feedback: &FourMotorsFeedback) -> (FourMotorsStatus, BatteryStatus) {
     let mut motors_status = FourMotorsStatus::default();
     let mut battery_status = BatteryStatus::default();
     let segments: Vec<&str> = line.split(';').collect();
@@ -462,21 +462,25 @@ fn parse_status(line: &str) -> (FourMotorsStatus, BatteryStatus) {
                     motors_status.motor_front_left.motor_name = String::from("front_left");
                     motors_status.motor_front_left.current = current;
                     motors_status.motor_front_left.voltage = voltage;
+                    motors_status.motor_front_left.speed = feedback.motor_front_left.speed;
                 }
                 "fr" => {
                     motors_status.motor_front_right.motor_name = String::from("front_right");
                     motors_status.motor_front_right.current = current;
                     motors_status.motor_front_right.voltage = voltage;
+                    motors_status.motor_front_right.speed = feedback.motor_front_right.speed;
                 }
                 "rl" => {
                     motors_status.motor_rear_left.motor_name = String::from("rear_left");
                     motors_status.motor_rear_left.current = current;
                     motors_status.motor_rear_left.voltage = voltage;
+                    motors_status.motor_rear_left.speed = feedback.motor_rear_left.speed;
                 }
                 "rr" => {
                     motors_status.motor_rear_right.motor_name = String::from("rear_right");
                     motors_status.motor_rear_right.current = current;
                     motors_status.motor_rear_right.voltage = voltage;
+                    motors_status.motor_rear_right.speed = feedback.motor_rear_right.speed;
                 }
                 _ => (),
             }

@@ -1,14 +1,31 @@
 import React from "react";
 import JoystickControl from "./joystick/JoystickControl";
-
+import MotorsStatus from "./motors_status/MotorsStatus";
+import BatteryStatus from "./battery_status/batteryStatus";
+import GNSSDisplay from "./gnss/GNSSDisplay";
+import LidarVisualization from "./lidar/LidarVisualization";
 
 const AppLayout = () => {
-    return (
-      <div>
-        <h1>Robot Interface</h1>
+  return (
+    <div style={{ padding: "20px" }}>
+      <h1 style={{ textAlign: "center" }}>Robot Interface</h1>
+
+      {/* Disposition côte à côte */}
+      <div style={{ display: "flex", justifyContent: "space-around", alignItems: "flex-start", gap: "20px" }}>
         <JoystickControl />
+        <MotorsStatus />
+        <BatteryStatus />
       </div>
-    );
-  };
-  
-  export default AppLayout;
+
+      {/* GNSS et LiDAR en dessous */}
+      <div style={{ marginTop: "30px" }}>
+        <GNSSDisplay />
+      </div>
+      <div style={{ marginTop: "30px" }}>
+        <LidarVisualization />
+      </div>
+    </div>
+  );
+};
+
+export default AppLayout;

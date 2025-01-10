@@ -80,7 +80,7 @@ const JoystickControl = () => {
         });
   
         cmdVelTopic.publish(twist);
-      }, 100); // Lire toutes les 100 ms
+      }, 50); // Lire toutes les 100 ms
   
       return () => clearInterval(interval); // Nettoyer l'intervalle à la désactivation
     }, [joystickState]); // Dépendance aux changements de joystickState
@@ -88,7 +88,7 @@ return (
     <div>
         <h2>JOystick Control</h2>
         <Joystick
-        size={200}
+        size={100}
         baseColor="lightgray"
         stickColor="blue"
         move={handleMove}
