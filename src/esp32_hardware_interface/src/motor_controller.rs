@@ -55,8 +55,8 @@ impl MotorController {
             let mut feedback = String::from("<FB=");
             for (name, motor) in motors.iter() {
                 feedback.push_str(&format!(
-                    "{},{},{};",
-                    name, motor.state.position, motor.state.speed,
+                    "{},{},{},{};",
+                    name, motor.state.position, motor.state.speed,motor.state.desired_speed
                 ));
             }
             feedback.push('>');
@@ -140,8 +140,36 @@ impl MotorController {
             } else {
                 return Err("Failed to acquire lock while handling command".to_string());
             }
-        }
+        } else if cmd.contains("PID") {
+            let cmd_body = &cmd[5..cmd.len() - 1]; // Remove '<PID=' and '>' from the command
 
+            for segment in cmd_body.split(';') {
+                if let Some((name, values)) = segment.split_once(':') {
+                    let gains: Vec<&str> = values.split(',').collect();
+                    if gains.len() == 3 {
+                        if let (Ok(kp), Ok(ki), Ok(kd)) = (
+                            gains[0].trim().parse::<f32>(),
+                            gains[1].trim().parse::<f32>(),
+                            gains[2].trim().parse::<f32>(),
+                        ) {
+                            // Appelle la fonction change_pid_gain
+                            if let Err(e) = self.change_pid_gain(&name.trim().to_string(), kp, ki, kd) {
+                                return Err(format!("<Error: {}>", e));
+                            }
+                        } else {
+                            return Err(format!(
+                                "<Error: invalid PID values '{}' for motor '{}'>",
+                                values, name
+                            ));
+                        }
+                    } else {
+                        return Err(format!("<Error: invalid PID format for motor '{}'>", name));
+                    }
+                } else {
+                    return Err(format!("<Error: invalid segment '{}'>", segment));
+                }
+            }
+        }
         Ok(())
     }
 

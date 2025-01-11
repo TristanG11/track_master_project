@@ -6,6 +6,7 @@ from pygame.locals import *
 import time
 from diagnostic_updater import Updater, FunctionDiagnosticTask
 from diagnostic_msgs.msg import DiagnosticStatus
+from std_msgs.msg import Bool
 
 class JoystickControlNode(Node):
     def __init__(self):
@@ -29,11 +30,13 @@ class JoystickControlNode(Node):
                 ('axis_linear', 4),
                 ('button_stop', 0),
                 ('button_start', 2),
+                ('use_app_topic', '/use_app_topic'),
             ]
         )
 
         # Récupération des paramètres
         self.twist_topic = self.get_parameter('twist_topic').value
+        self.use_app_topic = self.get_parameter('use_app_topic').value
         self.max_linear_speed = self.get_parameter('max_linear_speed').value
         self.min_linear_speed = self.get_parameter('min_linear_speed').value
         self.max_angular_speed = self.get_parameter('max_angular_speed').value
@@ -54,6 +57,8 @@ class JoystickControlNode(Node):
         self.angular_speed = 0.0
         self.msg = Twist()
 
+        self.create_subscription(Bool,self.use_app_topic,self.use_app_cb)
+
         # Initialisation de Pygame et du joystick
         pygame.init()
         pygame.joystick.init()
@@ -68,13 +73,16 @@ class JoystickControlNode(Node):
         self.updater.add("Joystick Status", self.joystick_diagnostic)
 
         self.stopped = False
+        self.use_app_joystick = True
 
         # Timers
         self.timer = self.create_timer(self.timer_frequency, self.update)
         self.timer_diag = self.create_timer(self.diag_timer_frequency, self.diag_update)
 
         self.check_joystick_connection()
-
+    def use_app_cb(self, msg):
+        self.use_app_joystick = msg.data
+        self.get_logger().info(f"Received use_app_joystick: {self.use_app_joystick}")
     def check_joystick_connection(self):
         while True:
             pygame.joystick.quit()
@@ -119,6 +127,11 @@ class JoystickControlNode(Node):
             return 0.0
 
     def update(self):
+
+        if self.use_app_joystick:
+            self.get_logger().info("Joystick disabled by /use_app_topic. Skipping update.")
+            return
+        
         if pygame.joystick.get_count() == 0:
             if self.joystick_connected:
                 self.last_disconnection_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
