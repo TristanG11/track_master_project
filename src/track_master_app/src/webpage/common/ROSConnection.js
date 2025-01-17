@@ -5,6 +5,7 @@ const ros = new ROSLIB.Ros({
     url: "ws://localhost:9090",
 });
 
+
 ros.on("connection", () => {
     console.log("Connected to rosbridge");
 });
@@ -18,3 +19,4 @@ ros.on("close", () => {
 });
 
 export default ros;
+

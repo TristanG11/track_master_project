@@ -6,6 +6,7 @@ import GNSSDisplay from "./gnss/GNSSDisplay";
 import LidarVisualization from "./lidar/LidarVisualization";
 import MotorPIDTuner from "./test/MotorPIDTuner";
 import MotorFeedback from "./test/MotorFeedback";
+import CameraView from "./camera/CameraView"
 const AppLayout = () => {
   return (
     <div style={{ padding: "20px" }}>
@@ -40,6 +41,10 @@ const AppLayout = () => {
 
       <div style={{ marginTop: "30px" }}>
         <MotorFeedback />
+      </div>
+
+      <div style={{ marginTop: "30px" }}>
+        <CameraView />
       </div>
     </div>
   );

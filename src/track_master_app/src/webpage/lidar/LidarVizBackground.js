@@ -1,9 +1,9 @@
 import React from "react";
-import { Stage, Layer, Circle, Line, Text } from "react-konva";
+import { Stage, Layer, Circle, Line, Text, Arrow } from "react-konva";
 
-const LidarVizBackground = ({ lidarPoints = []  }) => {
+const LidarVizBackground = ({ lidarPoints = [] }) => {
   const lidarRange = 12; // Portée maximale du LiDAR en mètres
-  const circleSteps = [0.05, 2, 4, 6, 8, 10, 12]; // Distances des cercles en mètres
+  const circleSteps = [2, 4, 6, 8, 10, 12]; // Distances des cercles en mètres
   const scale = 30; // Échelle pour convertir les mètres en pixels (1m = 30px)
   const canvasSize = 800; // Taille du canvas (800x800)
   const center = canvasSize / 2; // Coordonnées du centre
@@ -20,7 +20,8 @@ const LidarVizBackground = ({ lidarPoints = []  }) => {
               y={center}
               radius={distance * scale} // Distance multipliée par l'échelle
               stroke="white"
-              strokeWidth={0.5}
+              strokeWidth={1}
+              dash={[5, 5]} // Style en pointillé
             />
           ))}
 
@@ -28,20 +29,20 @@ const LidarVizBackground = ({ lidarPoints = []  }) => {
           <Line
             points={[center, 0, center, canvasSize]} // Ligne verticale
             stroke="white"
-            strokeWidth={0.5}
+            strokeWidth={1}
           />
           <Line
             points={[0, center, canvasSize, center]} // Ligne horizontale
             stroke="white"
-            strokeWidth={0.5}
+            strokeWidth={1}
           />
 
-          {/* Petits labels pour indiquer les distances */}
+          {/* Labels pour les cercles */}
           {circleSteps.map((distance, index) => (
             <Text
               key={`label-${index}`}
               x={center + distance * scale + 5} // Décalé à droite du cercle
-              y={center - 5} // Aligné au niveau de l'axe horizontal
+              y={center - 10} // Aligné au niveau de l'axe horizontal
               text={`${distance}m`}
               fontSize={12}
               fill="white"
@@ -51,6 +52,24 @@ const LidarVizBackground = ({ lidarPoints = []  }) => {
           {/* Cercle central pour représenter l'origine */}
           <Circle x={center} y={center} radius={5} fill="red" />
 
+          {/* Indicateur de direction (avant et droite) */}
+          <Arrow
+            points={[center, center, center, center - 50]} // Ligne pointant vers le haut
+            pointerLength={10}
+            pointerWidth={10}
+            fill="green"
+            stroke="green"
+            strokeWidth={2}
+          />
+          <Arrow
+            points={[center, center, center + 50, center]} // Ligne pointant vers la droite
+            pointerLength={10}
+            pointerWidth={10}
+            fill="blue"
+            stroke="blue"
+            strokeWidth={2}
+          />
+
           {/* Points du LiDAR */}
           {lidarPoints.map((point, index) => (
             <Circle
@@ -58,7 +77,7 @@ const LidarVizBackground = ({ lidarPoints = []  }) => {
               x={center + point.x * scale} // Conversion des coordonnées
               y={center - point.y * scale} // Conversion des coordonnées
               radius={2} // Taille des points
-              fill="red"
+              fill="yellow" // Couleur des points
             />
           ))}
         </Layer>
