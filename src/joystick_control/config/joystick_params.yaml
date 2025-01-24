@@ -1,7 +1,7 @@
 joystick_control_node:
   ros__parameters:
     twist_topic: "/diff_drive_controller/cmd_vel_unstamped"
-    use_app_topic: "/use_app_joystick"
+    cmd_type: "/cmd_type"
     max_linear_speed: 0.5
     min_linear_speed: 0.0
     max_angular_speed: 0.15

@@ -77,7 +77,7 @@ void BatteryStatus::updateAll() {
 MotorStatus::MotorStatus(const char* name, uint8_t pin_current, uint8_t pin_voltage)
     : pin_current_(pin_current), pin_voltage_(pin_voltage) {
     strncpy(motor_name_, name, sizeof(motor_name_) - 1);
-    motor_name_[sizeof(motor_name_) - 1] = '\0'; // Assurez-vous que le tableau est terminé par un '\0'
+    motor_name_[sizeof(motor_name_) - 1] = '\0';
     pinMode(pin_voltage_, INPUT);
     pinMode(pin_current_, INPUT);
 }

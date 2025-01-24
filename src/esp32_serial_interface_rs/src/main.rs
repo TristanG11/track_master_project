@@ -97,7 +97,7 @@ fn main() {
             rclrs::QOS_PROFILE_DEFAULT,
             {
                 let serial_port = serial_port.clone();
-                let buffer_size: u32 = 256; // Buffer size on Arduino
+                let buffer_size: u32 = 256; // Buffer size on ESP32
                 let min_free_space: u32 = 64; // Minimum required space before writing
                 let max_buffer_size: u32 = 64; // Maximum allowed send size
                 let diag_tx = diag_tx.clone();
@@ -133,7 +133,7 @@ fn main() {
                                 }
                                 if space_available >= min_free_space as i32 {
                                     // Write to the serial port
-                                    match port.write_all(command.as_bytes()) {
+                                   /*  match port.write_all(command.as_bytes()) {
                                         Ok(_) => { /* Command sent successfully */
                                             last_sending_time = Some(Instant::now());
                                             // Send diagnostic for successful command
@@ -175,7 +175,7 @@ fn main() {
                                                     value: e.to_string(),
                                                 }],
                                             );}
-                                    }
+                                    }*/
                                 } else {
                                     println!(
                                         "Insufficient space in the buffer. Available: {} bytes, Required: {} bytes",
@@ -239,9 +239,9 @@ fn main() {
             rclrs::QOS_PROFILE_DEFAULT,
             {
                 let serial_port = serial_port.clone();
-                let buffer_size: u32 = 256; // Taille du tampon sur Arduino
-                let min_free_space: u32 = 64; // Espace libre minimal requis avant l'écriture
-                let max_buffer_size: u32 = 64; // Taille maximale des données à envoyer
+                let buffer_size: u32 = 256; // Buffer size on ESP32
+                let min_free_space: u32 = 64; // Minimum required space before writing
+                let max_buffer_size: u32 = 64; // Maximum allowed send size
                 let diag_tx = diag_tx.clone();
                 let mut last_sending_time: Option<std::time::Instant> = None;
                 move |msg: FourMotorsPid| {
@@ -278,6 +278,7 @@ fn main() {
                                         // Écriture dans le port série
                                         match port.write_all(command.as_bytes()) {
                                             Ok(_) => {
+                                                println!("sent : {}",command);
                                                 last_sending_time = Some(Instant::now());
                                                 // Envoyer un diagnostic de succès
                                                 send_diagnostic(

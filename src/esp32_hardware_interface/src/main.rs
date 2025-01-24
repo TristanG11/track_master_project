@@ -15,7 +15,6 @@ use esp_idf_hal::uart;
 use esp_idf_hal::uart::config::DataBits;
 use motor::Motor;
 use motor_controller::MotorController;
-use std::fmt::format;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -83,7 +82,7 @@ fn main() -> Result<(), String> {
         }
     };
 
-    /// Motor: front left
+    // Motor: front left
     let dir_pin_fl = peripherals.pins.gpio15;
     let pwm_pin_fl = match LedcDriver::new(
         peripherals.ledc.channel1,
@@ -297,6 +296,7 @@ fn main() -> Result<(), String> {
                         if size > 0 {
                             if let Ok(recv) = std::str::from_utf8(&buffer[..size]) {
                                 let command = recv.trim().to_string();
+                                println!("<{}>",command);
                                 {
                                     match controller.lock() {
                                         Ok(mut controller) => {
@@ -361,11 +361,10 @@ fn main() -> Result<(), String> {
         })
     };
 
-    // Main loop
-    uart_thread.join().unwrap();
-    motor_processing_thread.join().unwrap();
-    /*loop {
-        std::thread::sleep(std::time::Duration::from_secs_f32(0));
-    }*/
+    
+    uart_thread.join().unwrap().unwrap();
+    motor_processing_thread.join().unwrap().unwrap();
+
+
     Ok(())
 }

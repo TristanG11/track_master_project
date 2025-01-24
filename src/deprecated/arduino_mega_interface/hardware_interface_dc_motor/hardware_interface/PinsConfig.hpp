@@ -43,7 +43,6 @@ const int BATT_VOLTAGE_PIN = A9;
 #define PINSCONFIG_HPP
 
 // Mappage des broches pour l'ESP8266
-// Assurez-vous que ces GPIO sont disponibles sur votre carte et non utilisés par d'autres fonctions importantes
 
 // Moteur avant droit (Front Right)
 const int MOTOR_FR_DIR_PIN = 5;         // GPIO5

@@ -1,0 +1,6 @@
+.lidarContainer {
+    max-width: 600px; /* Définis la largeur maximale pour le container LiDAR */
+    max-height: 600px; /* Ajuste la hauteur automatiquement en fonction du contenu */
+    margin: 0px ; /* Centre le container horizontalement */
+  }
+  

@@ -49,6 +49,7 @@ const GNSSDisplay = () => {
       style={{ height: "400px", width: "100%" }}
       icon={customIcon}
     >
+      
       {/* Fond de carte OpenStreetMap */}
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

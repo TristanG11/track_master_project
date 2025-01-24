@@ -63,7 +63,6 @@ std::vector<hardware_interface::CommandInterface> DiffDriveArduinoHardwareInterf
 
 hardware_interface::return_type DiffDriveArduinoHardwareInterface::read(const rclcpp::Time & time, const rclcpp::Duration & period) {
     // La lecture des états est maintenant gérée par le subscriber `/cmd_vel_feedback`
-    // Rien à faire ici
     return hardware_interface::return_type::OK;
 }
 

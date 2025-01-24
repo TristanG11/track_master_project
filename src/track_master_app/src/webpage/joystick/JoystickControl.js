@@ -7,7 +7,7 @@ const JoystickControl = () => {
   const [joystickState, setJoystickState] = useState({ x: 0, y: 0 });
   const [linearSpeed, setLinearSpeed] = useState(0.0);
   const [angularSpeed, setAngularSpeed] = useState(0.0);
-  const [useAppJoystick, setUseAppJoystick] = useState(true); // Définit si on utilise le joystick de l'application
+  const [cmdType, setCmdType] = useState("app_joystick"); // Type de commande sélectionné
 
   // Paramètres de conversion
   const maxLinearSpeed = 0.5;
@@ -53,32 +53,30 @@ const JoystickControl = () => {
     setJoystickState({ x: 0, y: 0 });
   };
 
-  // Publier la commande pour basculer entre manette PS4 et joystick app
-  const publishUseAppJoystick = (value) => {
-    const useAppJoystickTopic = new ROSLIB.Topic({
+  // Publier la commande de type de contrôle
+  const publishCmdType = (value) => {
+    const cmdTypeTopic = new ROSLIB.Topic({
       ros: ros,
-      name: "/use_app_joystick",
-      messageType: "std_msgs/Bool",
+      name: "/cmd_type",
+      messageType: "std_msgs/String",
     });
 
     const message = new ROSLIB.Message({
       data: value,
     });
 
-    useAppJoystickTopic.publish(message);
-    console.log(`Published /use_app_joystick: ${value}`);
+    cmdTypeTopic.publish(message);
+    console.log(`Published /cmd_type: ${value}`);
   };
 
-  const toggleJoystickMode = () => {
-    setUseAppJoystick((prev) => {
-      const newValue = !prev;
-      publishUseAppJoystick(newValue); // Publie la nouvelle valeur uniquement ici
-      return newValue;
-    });
+  const handleCmdTypeChange = (event) => {
+    const selectedType = event.target.value;
+    setCmdType(selectedType);
+    publishCmdType(selectedType);
   };
 
   useEffect(() => {
-    if (useAppJoystick) {
+    if (cmdType === "app_joystick") {
       const interval = setInterval(() => {
         const linear = joyToLin(joystickState.y);
         const angular = -joyToAng(joystickState.x);
@@ -91,6 +89,11 @@ const JoystickControl = () => {
           ros: ros,
           name: "/diff_drive_controller/cmd_vel_unstamped",
           messageType: "geometry_msgs/Twist",
+          queue_size: 10, // Taille de la file d'attente
+          qos: {
+            durability: "transient_local", // Définit la durabilité pour correspondre au subscriber
+            reliability: "reliable", // Utiliser une fiabilité fiable
+          },
         });
 
         const twist = new ROSLIB.Message({
@@ -103,27 +106,27 @@ const JoystickControl = () => {
 
       return () => clearInterval(interval); // Nettoyer l'intervalle à la désactivation
     }
-  }, [joystickState, useAppJoystick]); // Dépendances : joystickState, useAppJoystick
+  }, [joystickState, cmdType]); // Dépendances : joystickState, cmdType
 
   return (
     <div>
       <h2>Joystick Control</h2>
-      <button
-        onClick={toggleJoystickMode}
+
+      <select
+        value={cmdType}
+        onChange={handleCmdTypeChange}
         style={{
-          padding: "10px 20px",
-          backgroundColor: useAppJoystick ? "green" : "red",
-          color: "white",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer",
+          padding: "10px",
           marginBottom: "10px",
+          borderRadius: "5px",
         }}
       >
-        {useAppJoystick ? "Switch to PS4 Controller" : "Switch to App Joystick"}
-      </button>
+        <option value="app_joystick">App Joystick</option>
+        <option value="ps4_controller">PS4 Controller</option>
+        <option value="voice_command">Voice Command</option>
+      </select>
 
-      {useAppJoystick && (
+      {cmdType === "app_joystick" && (
         <div>
           <Joystick
             size={100}

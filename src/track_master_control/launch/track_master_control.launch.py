@@ -13,7 +13,7 @@ def generate_launch_description():
 
     return LaunchDescription([
 
-        # Spawner du joint_state_broadcaster
+        # Spawner of joint_state_broadcaster
         Node(
             package='controller_manager',
             executable='spawner',
@@ -21,7 +21,7 @@ def generate_launch_description():
             output='screen'
         ),
         
-        # Spawner du diff_drive_controller
+        # Spawner of diff_drive_controller
         Node(
             package='controller_manager',
             executable='spawner',

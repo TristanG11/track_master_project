@@ -142,7 +142,7 @@ impl MotorController {
             }
         } else if cmd.contains("PID") {
             let cmd_body = &cmd[5..cmd.len() - 1]; // Remove '<PID=' and '>' from the command
-
+            println!("<{}>",cmd_body);
             for segment in cmd_body.split(';') {
                 if let Some((name, values)) = segment.split_once(':') {
                     let gains: Vec<&str> = values.split(',').collect();

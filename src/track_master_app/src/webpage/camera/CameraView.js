@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ROSLIB from "roslib";
 import ros from "../common/ROSConnection";
+import styles from './CameraView.module.css'; 
 
 const CameraView = () => {
   const [imageSrc, setImageSrc] = useState(null);
@@ -17,10 +18,11 @@ const CameraView = () => {
         const { height, width, encoding } = message;
       
         // Convertir la chaîne en tableau d'octets
-        const dataArray = new Uint8Array(message.data.length);
-        for (let i = 0; i < message.data.length; i++) {
-          dataArray[i] = message.data.charCodeAt(i);
-        }
+        const binary_string = atob(message.data);
+  const dataArray = new Uint8Array(binary_string.length);
+  for (let i = 0; i < binary_string.length; i++) {
+    dataArray[i] = binary_string.charCodeAt(i);
+  }
       
         console.log("Converted data length:", dataArray.length);
       
@@ -55,7 +57,7 @@ const CameraView = () => {
         console.log("Encoding:", encoding);
         console.log("Data length (expected):", width * height * 3); // Pour rgb8 ou bgr8
         console.log("Data length (received):", dataArray.length);
-        console.log("First 10 bytes:", dataArray.slice(0, 10)); // Vérifiez les premières données
+        console.log("First 10 bytes:", dataArray.slice(0, 10)); // Vérifier les premières données
 
       
         // Mettre les données sur le canvas et générer l'image
@@ -72,14 +74,10 @@ const CameraView = () => {
   }, []);
 
   return (
-    <div>
+    <div className={styles.cameraContainer}>
       <h2>Camera View</h2>
       {imageSrc ? (
-        <img
-          src={imageSrc}
-          alt="Camera Feed"
-          style={{ maxWidth: "100%", border: "2px solid white" }}
-        />
+        <img src={imageSrc} alt="Camera Feed" className={styles.cameraImage} />
       ) : (
         <p>Loading camera feed...</p>
       )}

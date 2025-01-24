@@ -146,7 +146,6 @@ void HardwareInterface::feedback() {
         }
     }
 
-    // Le buffer est prêt, vous pouvez ici activer le Serial si nécessaire
     // Serial.println(feedback);
 }*/
 

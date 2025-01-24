@@ -69,18 +69,18 @@ void MotorController::attachInterrupts() {
     attachInterrupt(digitalPinToInterrupt(MOTOR_RL_ENCODER_A_PIN), handleMotorRlEncoderA, CHANGE);
 }
 
-const float INTEGRAL_LIMIT = 1000.0; // Définissez une limite adaptée à votre application
+const float INTEGRAL_LIMIT = 1000.0;
 
 void MotorController::computePID() {
     // Moteur avant droit (FR)
     error_fr = motor_fr->getDesiredSpeed() - motor_fr->computeSpeed();
     integral_fr += error_fr;
-    integral_fr = constrain(integral_fr, -INTEGRAL_LIMIT, INTEGRAL_LIMIT); // Limitez l'intégrale
+    integral_fr = constrain(integral_fr, -INTEGRAL_LIMIT, INTEGRAL_LIMIT); // Limiter l'intégrale
     derivative_fr = error_fr - lastError_fr;
     lastError_fr = error_fr;
     motor_fr->resetTicks();
 
-    // Répétez pour les autres moteurs
+    // Répéter pour les autres moteurs
     error_fl = motor_fl->getDesiredSpeed() - motor_fl->computeSpeed();
     integral_fl += error_fl;
     integral_fl = constrain(integral_fl, -INTEGRAL_LIMIT, INTEGRAL_LIMIT);
