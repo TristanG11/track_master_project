@@ -10,6 +10,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/config', ['config/voice_command_params.yaml']),
+        ('share/'+ package_name + '/launch',['launch/voice_command_robot.launch.py']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -20,6 +22,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'voice_command_robot_node = voice_command_robot.voice_command_robot_node:main'
         ],
     },
 )

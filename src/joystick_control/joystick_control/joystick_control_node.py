@@ -30,13 +30,13 @@ class JoystickControlNode(Node):
                 ('axis_linear', 4),
                 ('button_stop', 0),
                 ('button_start', 2),
-                ('cmd_type', '/cmd_type'),
+                ('cmd_type_topic', '/cmd_type'),
             ]
         )
 
         # Récupération des paramètres
         self.twist_topic = self.get_parameter('twist_topic').value
-        self.cmd_type_topic = self.get_parameter('cmd_type').value
+        self.cmd_type_topic = self.get_parameter('cmd_type_topic').value
         self.max_linear_speed = self.get_parameter('max_linear_speed').value
         self.min_linear_speed = self.get_parameter('min_linear_speed').value
         self.max_angular_speed = self.get_parameter('max_angular_speed').value
