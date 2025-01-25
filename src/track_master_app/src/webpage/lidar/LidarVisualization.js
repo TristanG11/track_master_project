@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import ROSLIB from "roslib";
 import ros from "../common/ROSConnection";
 import LidarVizBackground from "./LidarVizBackground";
-import styles from './LidarVisualization.module.css'; // Ajoute le chemin correct au fichier CSS
+import styles from './LidarVisualization.module.css'; // Add the correct path to the CSS file
 
 const LidarVisualization = () => {
   const [lidarPoints, setLidarPoints] = useState([]);

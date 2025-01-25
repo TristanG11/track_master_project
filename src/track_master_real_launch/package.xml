@@ -3,9 +3,9 @@
 <package format="3">
   <name>track_master_real_launch</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Package for launching different setup in real world</description>
   <maintainer email="tristanogandagaguerick@gmail.com">tristan</maintainer>
-  <license>TODO: License declaration</license>
+  <license>BSD</license>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

@@ -12,7 +12,7 @@ class JoystickControlNode(Node):
     def __init__(self):
         super().__init__('joystick_control_node')
 
-        # Déclaration des paramètres
+        # Declare parameters
         self.declare_parameters(
             namespace='',
             parameters=[
@@ -34,7 +34,7 @@ class JoystickControlNode(Node):
             ]
         )
 
-        # Récupération des paramètres
+        # Retrieve parameters
         self.twist_topic = self.get_parameter('twist_topic').value
         self.cmd_type_topic = self.get_parameter('cmd_type_topic').value
         self.max_linear_speed = self.get_parameter('max_linear_speed').value
@@ -51,7 +51,7 @@ class JoystickControlNode(Node):
         self.button_stop = self.get_parameter('button_stop').value
         self.button_start = self.get_parameter('button_start').value
 
-        # Initialisation du Publisher
+        # Initialize Publisher
         self.publisher = self.create_publisher(Twist, self.twist_topic, 10)
         self.linear_speed = 0.0
         self.angular_speed = 0.0
@@ -59,7 +59,7 @@ class JoystickControlNode(Node):
 
         self.create_subscription(String,self.cmd_type_topic,self.cmd_type_cb)
 
-        # Initialisation de Pygame et du joystick
+        # Initialize Pygame and joystick
         pygame.init()
         pygame.joystick.init()
 
@@ -67,7 +67,7 @@ class JoystickControlNode(Node):
         self.last_connection_time = "Never"
         self.last_disconnection_time = "Never"
 
-        # Initialisation des diagnostics
+        # Initialize diagnostics
         self.updater = Updater(self)
         self.updater.setHardwareID("joystick")
         self.updater.add("Joystick Status", self.joystick_diagnostic)
@@ -80,9 +80,11 @@ class JoystickControlNode(Node):
         self.timer_diag = self.create_timer(self.diag_timer_frequency, self.diag_update)
 
         self.check_joystick_connection()
+
     def cmd_type_cb(self, msg):
         self.cmd_type = msg.data
         self.get_logger().info(f"Received cmd_type: {self.cmd_type}")
+        
     def check_joystick_connection(self):
         while True:
             pygame.joystick.quit()

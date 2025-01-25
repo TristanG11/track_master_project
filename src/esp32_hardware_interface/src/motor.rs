@@ -95,31 +95,19 @@ impl Motor {
         match self.state.cmd {
             n if n < 0.0 => {
                 // Set motor to move backward
-                if let Err(e) = self.set_dir(Direction::Backward) {
-                    return Err(e);
-                }
+                self.set_dir(Direction::Backward)?;
                 let cmd = (-n) as u32;
-                if let Err(e) = self.pins.pwm_pin.set_duty(cmd) {
-                    return Err(e);
-                }
+                self.pins.pwm_pin.set_duty(cmd)?;
             }
             n if n == 0.0 => {
                 // Stop the motor
-                if let Err(e) = self.set_dir(Direction::Stop) {
-                    return Err(e);
-                }
-                if let Err(e) = self.pins.pwm_pin.set_duty(0) {
-                    return Err(e);
-                }
+                self.set_dir(Direction::Stop)?;
+                self.pins.pwm_pin.set_duty(0)?;
             }
             n if n > 0.0 => {
                 // Set motor to move forward
-                if let Err(e) = self.set_dir(Direction::Forward) {
-                    return Err(e);
-                }
-                if let Err(e) = self.pins.pwm_pin.set_duty(n as u32) {
-                    return Err(e);
-                }
+                self.set_dir(Direction::Forward)?;
+                self.pins.pwm_pin.set_duty(n as u32)?;
             }
             _ => {}
         }
@@ -131,21 +119,15 @@ impl Motor {
         match direction {
             Direction::Backward => {
                 // Set direction pin to low for backward motion
-                if let Err(e) = self.pins.dir_pin.set_low() {
-                    return Err(e);
-                }
+                self.pins.dir_pin.set_low()?;
             }
             Direction::Forward => {
                 // Set direction pin to high for forward motion
-                if let Err(e) = self.pins.dir_pin.set_high() {
-                    return Err(e);
-                }
+                self.pins.dir_pin.set_high()?;
             }
             Direction::Stop => {
                 // Set direction pin to low to stop the motor
-                if let Err(e) = self.pins.dir_pin.set_low() {
-                    return Err(e);
-                }
+                self.pins.dir_pin.set_low()?;
             }
         }
         Ok(())

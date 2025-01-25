@@ -72,13 +72,8 @@ impl Encoder {
         }
 
         // Set the filter value and enable the filter
-        if let Err(e) = unit.set_filter_value(min(10 * 80, 1023)) {
-            return Err(e);
-        }
-
-        if let Err(e) = unit.filter_enable() {
-            return Err(e);
-        }
+        unit.set_filter_value(min(10 * 80, 1023)) ?;
+        unit.filter_enable()?;
 
         let total_ticks = Arc::new(AtomicI32::new(0));
         let last_total_ticks = Arc::new(AtomicI32::new(0));
@@ -103,23 +98,13 @@ impl Encoder {
         }
 
         // Enable interrupts for high and low limit events
-        if let Err(e) = unit.event_enable(PcntEvent::HighLimit) {
-            return Err(e);
-        }
-        if let Err(e) = unit.event_enable(PcntEvent::LowLimit) {
-            return Err(e);
-        }
+        unit.event_enable(PcntEvent::HighLimit)?;
+        unit.event_enable(PcntEvent::LowLimit)?; 
 
         // Initialize the PCNT unit: pause, clear counter, and resume
-        if let Err(e) = unit.counter_pause() {
-            return Err(e);
-        }
-        if let Err(e) = unit.counter_clear() {
-            return Err(e);
-        }
-        if let Err(e) = unit.counter_resume() {
-            return Err(e);
-        }
+        unit.counter_pause()?;
+        unit.counter_clear()?;
+        unit.counter_resume()?;
 
         Ok(Self {
             unit,

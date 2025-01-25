@@ -7,15 +7,15 @@ const JoystickControl = () => {
   const [joystickState, setJoystickState] = useState({ x: 0, y: 0 });
   const [linearSpeed, setLinearSpeed] = useState(0.0);
   const [angularSpeed, setAngularSpeed] = useState(0.0);
-  const [cmdType, setCmdType] = useState("app_joystick"); // Type de commande sélectionné
+  const [cmdType, setCmdType] = useState("app_joystick"); // Selected control type
 
-  // Paramètres de conversion
+  // Conversion parameters
   const maxLinearSpeed = 0.5;
   const minLinearSpeed = -0.3;
   const maxAngularSpeed = 0.5;
   const minAngularSpeed = -0.5;
-  const maxJoy = 1.0; // Échelle maximale de l'entrée du joystick
-  const deadzoneThreshold = 0.05; // La valeur de la zone morte (ici 0)
+  const maxJoy = 1.0; // Maximum scale of joystick input
+  const deadzoneThreshold = 0.05; // Deadzone value (here 0)
 
   const joyToLin = (joyVal) => {
     if (joyVal >= deadzoneThreshold) {
@@ -53,7 +53,7 @@ const JoystickControl = () => {
     setJoystickState({ x: 0, y: 0 });
   };
 
-  // Publier la commande de type de contrôle
+  // Publish the control type commands
   const publishCmdType = (value) => {
     const cmdTypeTopic = new ROSLIB.Topic({
       ros: ros,
@@ -90,9 +90,10 @@ const JoystickControl = () => {
           name: "/diff_drive_controller/cmd_vel_unstamped",
           messageType: "geometry_msgs/Twist",
           queue_size: 10, // Taille de la file d'attente
+          
           qos: {
-            durability: "transient_local", // Définit la durabilité pour correspondre au subscriber
-            reliability: "reliable", // Utiliser une fiabilité fiable
+            durability: "transient_local", // Set durability to match the subscriber
+            reliability: "reliable", // Use reliable communication
           },
         });
 
@@ -102,11 +103,11 @@ const JoystickControl = () => {
         });
 
         cmdVelTopic.publish(twist);
-      }, 10); // Publier toutes les 10 ms
+      }, 10); // Publish every 10 ms
 
-      return () => clearInterval(interval); // Nettoyer l'intervalle à la désactivation
+      return () => clearInterval(interval); // Clear the interval when deactivating
     }
-  }, [joystickState, cmdType]); // Dépendances : joystickState, cmdType
+  }, [joystickState, cmdType]); // Dependencies: joystickState, cmdType
 
   return (
     <div>

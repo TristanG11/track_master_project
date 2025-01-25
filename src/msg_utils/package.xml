@@ -3,7 +3,7 @@
 <package format="3">
   <name>msg_utils</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Package for defining custom messages</description>
   <maintainer email="tristanogandagaguerick@gmail.com">Tristan Guerick Agoumbi Ogandaga</maintainer>
   <license>BSD</license>
 

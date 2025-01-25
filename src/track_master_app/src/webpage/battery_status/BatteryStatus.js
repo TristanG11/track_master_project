@@ -12,14 +12,14 @@ const BatteryStatus = () => {
   });
 
   useEffect(() => {
-    // Souscription au topic ROS pour la batterie
+    // Subscribe to the ROS topic for battery status
     const batteryTopic = new ROSLIB.Topic({
       ros: ros,
       name: "/battery_status",
       messageType: "msg_utils/BatteryStatus",
     });
 
-    // Mise à jour de l'état local avec les données reçues
+   // Update the local state with the received data
     batteryTopic.subscribe((message) => {
       setBatteryStatus({
         voltage: message.voltage,
@@ -29,7 +29,7 @@ const BatteryStatus = () => {
       });
     });
 
-    // Nettoyage de la souscription lors du démontage du composant
+    // Cleanup the subscription when the component unmounts
     return () => {
       batteryTopic.unsubscribe();
     };
@@ -38,25 +38,25 @@ const BatteryStatus = () => {
   return (
     <div>
       <h2>Battery Status</h2>
-      {/* Affichage de la jauge de batterie */}
+      {/* Display the battery gauge */}
       <BatteryGauge
-        value={batteryStatus.charge_level} // Niveau de charge (pourcentage)
-        charging={batteryStatus.charging} // Indicateur de charge
-        size={200} // Taille de la jauge
+        value={batteryStatus.charge_level} // Charge level (percentage)
+        charging={batteryStatus.charging} // Charging indicator
+        size={200} // Gauge size
         customization={{
           batteryMeter: {
-            fill: batteryStatus.charge_level > 20 ? "green" : "red", // Couleur verte si > 20%, rouge sinon
-            lowBatteryValue: 20, // Seuil de batterie faible
+            fill: batteryStatus.charge_level > 20 ? "green" : "red", // Green color if > 20%, red otherwise
+            lowBatteryValue: 20, // Low battery threshold
             lowBatteryFill: "red",
           },
           readingText: {
-            fontSize: 16, // Taille de la police
-            showPercentage: true, // Affiche le pourcentage
-            lowBatteryColor: "red", // Couleur du texte si batterie faible
+            fontSize: 16, // Font size
+            showPercentage: true, // Display percentage
+            lowBatteryColor: "red", // Text color if battery is low
           },
         }}
       />
-      {/* Informations supplémentaires */}
+      {/* Additional information */}
       <p>Voltage: {batteryStatus.voltage} V</p>
       <p>Current: {batteryStatus.current} A</p>
       <p>

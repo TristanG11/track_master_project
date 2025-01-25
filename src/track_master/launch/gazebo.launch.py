@@ -40,8 +40,6 @@ def generate_launch_description():
 
     )
 
-
-
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             os.path.join(get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')
@@ -49,14 +47,12 @@ def generate_launch_description():
         launch_arguments={'world': world_path}.items(),
     )
 
-
     spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py',
                     arguments=['-topic', 'robot_description',
                                 '-entity', 'tracker_master_bot'],
                     output='screen')
     
 
-    
     # RViz2 visualization
     rviz_config_path = os.path.join(get_package_share_directory(pkg_name), 'config', 'config.rviz')
 

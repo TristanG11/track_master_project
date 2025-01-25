@@ -216,27 +216,27 @@ fn main() -> Result<(), String> {
         eprintln!("<Failed in adding motor front left: {}>", e);
         return Err(format!("<Failed in adding motor front left: {}>", e));
     }
-    
+
     if let Err(e) = controller.add_motor(motor_front_right) {
         eprintln!("<Failed in adding motor front right: {}>", e);
         return Err(format!("<Failed in adding motor front right: {}>", e));
     }
-    
+
     if let Err(e) = controller.add_motor(motor_rear_right) {
         eprintln!("<Failed in adding motor rear right: {}>", e);
         return Err(format!("<Failed in adding motor rear right: {}>", e));
     }
-    
+
     if let Err(e) = controller.add_motor(motor_rear_left) {
         eprintln!("<Failed in adding motor rear left: {}>", e);
         return Err(format!("<Failed in adding motor rear left: {}>", e));
     }
-    
+
     // Setup periodic timer
     let queue = Arc::new(Queue::new(QUEUE_LENGTH));
-    if let Err(e) = controller.setup_timer(&mut timer, queue.clone()){
-        eprintln!("<Error : Failed in timer setup {}>",e);
-        return Err(format!("<Error : Failed in timer setup {}>",e));
+    if let Err(e) = controller.setup_timer(&mut timer, queue.clone()) {
+        eprintln!("<Error : Failed in timer setup {}>", e);
+        return Err(format!("<Error : Failed in timer setup {}>", e));
     }
 
     let controller = Arc::new(Mutex::new(controller));
@@ -246,12 +246,12 @@ fn main() -> Result<(), String> {
         let controller = controller.clone();
         let queue = queue.clone();
         std::thread::spawn(move || -> Result<(), String> {
-            while let Some(_) = queue.recv_front(10) {
+            while queue.recv_front(10).is_some() {
                 {
                     if let Ok(mut controller) = controller.try_lock() {
                         if let Err(e) = controller.process_motors() {
-                            eprintln!("<Error : Failed in processing motors : {}>",e);
-                            return Err(format!("<Error : Failed in processing motors : {}>",e));
+                            eprintln!("<Error : Failed in processing motors : {}>", e);
+                            return Err(format!("<Error : Failed in processing motors : {}>", e));
                         }
                     }
                 }
@@ -296,7 +296,7 @@ fn main() -> Result<(), String> {
                         if size > 0 {
                             if let Ok(recv) = std::str::from_utf8(&buffer[..size]) {
                                 let command = recv.trim().to_string();
-                                println!("<{}>",command);
+                                println!("<{}>", command);
                                 {
                                     match controller.lock() {
                                         Ok(mut controller) => {
@@ -309,12 +309,11 @@ fn main() -> Result<(), String> {
                                                     "Error : Failed to acquire peripherals : {}",
                                                     e
                                                 ));
-                                                
                                             }
                                         }
                                         Err(e) => {
                                             eprintln!("<Error : Failed to acquire lock for controller : {}>",e);
-                                            return Err(format!("<Error : Failed to acquire lock for controller : {}>",e))
+                                            return Err(format!("<Error : Failed to acquire lock for controller : {}>",e));
                                         }
                                     };
                                 }
@@ -323,8 +322,8 @@ fn main() -> Result<(), String> {
                     }
                     Err(e) => {
                         // Log UART read error
-                        eprintln!("<Error : Failed when reading from uart : {}",e);
-                        return Err(format!("<Error : Failed when reading from uart : {}",e));
+                        eprintln!("<Error : Failed when reading from uart : {}", e);
+                        return Err(format!("<Error : Failed when reading from uart : {}", e));
                     }
                 }
 
@@ -337,8 +336,10 @@ fn main() -> Result<(), String> {
                                 println!("{}", msg);
                             }
                             Err(e) => {
-                                eprintln!("<Error : Failed to get feedback from controller : {}>",
-                                    e);
+                                eprintln!(
+                                    "<Error : Failed to get feedback from controller : {}>",
+                                    e
+                                );
                                 return Err(format!(
                                     "<Error : Failed to get feedback from controller : {}>",
                                     e
@@ -346,8 +347,7 @@ fn main() -> Result<(), String> {
                             }
                         },
                         Err(e) => {
-                            eprintln!("<Error : Failed to acquire lock for controller : {}>",
-                                    e);
+                            eprintln!("<Error : Failed to acquire lock for controller : {}>", e);
                             return Err(format!(
                                 "<Error : Failed to acquire lock for controller : {}>",
                                 e
@@ -361,10 +361,8 @@ fn main() -> Result<(), String> {
         })
     };
 
-    
     uart_thread.join().unwrap().unwrap();
     motor_processing_thread.join().unwrap().unwrap();
-
 
     Ok(())
 }

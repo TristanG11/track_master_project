@@ -7,17 +7,17 @@ const CameraView = () => {
   const [imageSrc, setImageSrc] = useState(null);
 
   useEffect(() => {
-    // Souscription au topic de la caméra
+    // Subscribe to the camera topic
     const cameraTopic = new ROSLIB.Topic({
       ros: ros,
-      name: "/camera/image_raw", // Nom du topic
+      name: "/camera/image_raw", // Topic name
       messageType: "sensor_msgs/Image",
     });
 
     const handleImageMessage = (message) => {
         const { height, width, encoding } = message;
       
-        // Convertir la chaîne en tableau d'octets
+        // Convert the string to a byte array
         const binary_string = atob(message.data);
   const dataArray = new Uint8Array(binary_string.length);
   for (let i = 0; i < binary_string.length; i++) {
@@ -33,21 +33,21 @@ const CameraView = () => {
       
         const imageData = context.createImageData(width, height);
       
-        // Gestion des données selon l'encodage (par ex., rgb8)
+        // Handle data based on encoding 
         if (encoding === "rgb8") {
           for (let i = 0; i < dataArray.length; i += 3) {
             const pixelIndex = i / 3;
-            imageData.data[pixelIndex * 4] = dataArray[i]; // Rouge
-            imageData.data[pixelIndex * 4 + 1] = dataArray[i + 1]; // Vert
-            imageData.data[pixelIndex * 4 + 2] = dataArray[i + 2]; // Bleu
+            imageData.data[pixelIndex * 4] = dataArray[i]; // Red
+            imageData.data[pixelIndex * 4 + 1] = dataArray[i + 1]; // Green
+            imageData.data[pixelIndex * 4 + 2] = dataArray[i + 2]; // Blue
             imageData.data[pixelIndex * 4 + 3] = 255; // Alpha (opaque)
           }
         } else if (encoding === "bgr8") {
           for (let i = 0; i < dataArray.length; i += 3) {
             const pixelIndex = i / 3;
-            imageData.data[pixelIndex * 4] = dataArray[i + 2]; // Rouge
-            imageData.data[pixelIndex * 4 + 1] = dataArray[i + 1]; // Vert
-            imageData.data[pixelIndex * 4 + 2] = dataArray[i]; // Bleu
+            imageData.data[pixelIndex * 4] = dataArray[i + 2]; // Red
+            imageData.data[pixelIndex * 4 + 1] = dataArray[i + 1]; // Green
+            imageData.data[pixelIndex * 4 + 2] = dataArray[i]; // Blue
             imageData.data[pixelIndex * 4 + 3] = 255; // Alpha (opaque)
           }
         } else {
@@ -55,12 +55,12 @@ const CameraView = () => {
           return;
         }
         console.log("Encoding:", encoding);
-        console.log("Data length (expected):", width * height * 3); // Pour rgb8 ou bgr8
+        console.log("Data length (expected):", width * height * 3); // For rgb8 or bgr8
         console.log("Data length (received):", dataArray.length);
-        console.log("First 10 bytes:", dataArray.slice(0, 10)); // Vérifier les premières données
+        console.log("First 10 bytes:", dataArray.slice(0, 10)); // Check the first few bytes of data
 
       
-        // Mettre les données sur le canvas et générer l'image
+        // Draw the data onto the canvas and generate the image
         context.putImageData(imageData, 0, 0);
         setImageSrc(canvas.toDataURL());
       };

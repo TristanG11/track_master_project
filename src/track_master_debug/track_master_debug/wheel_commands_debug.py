@@ -8,7 +8,7 @@ from ament_index_python.packages import get_package_share_directory
 import yaml
 import os
 from diagnostic_updater import Updater
-from diagnostic_msgs.msg import DiagnosticStatus  # Import nécessaire
+from diagnostic_msgs.msg import DiagnosticStatus  # Necessary import
 
 class WheelCommandsDebug(Node):
     def __init__(self):
@@ -23,7 +23,7 @@ class WheelCommandsDebug(Node):
             try:
                 config = yaml.safe_load(yaml_file)
             except Exception as e:
-                self.get_logger().error(f"Erreur lors de la lecture du fichier YAML : {e}")
+                self.get_logger().error(f"Error reading the YAML file: {e}")
                 return
         
 
@@ -60,7 +60,6 @@ class WheelCommandsDebug(Node):
         return (vfl, vfr, vrl, vrr)
 
     def update(self):
-
         self.updater.update()
 
     def diagnostic_task(self, stat):
@@ -73,14 +72,14 @@ class WheelCommandsDebug(Node):
             self.wheel_cmd.rear_right_wheel_speed.data,
         ]
 
-        stat.summary(DiagnosticStatus.OK, "Comparaison des vitesses des roues")
+        stat.summary(DiagnosticStatus.OK, "Comparison of wheel speeds")
 
-        wheel_names = ["Avant Gauche", "Avant Droite", "Arrière Gauche", "Arrière Droite"]
+        wheel_names = ["Front Left", "Front Right", "Rear Left", "Rear Right"]
         for i in range(4):
-            stat.add(f"Vitesse Calculée ({wheel_names[i]})", f"{computed_velocities[i]:.3f}")
-            stat.add(f"Vitesse Publiée ({wheel_names[i]})", f"{published_velocities[i]:.3f}")
+            stat.add(f"Computed Speed ({wheel_names[i]})", f"{computed_velocities[i]:.3f}")
+            stat.add(f"Published Speed ({wheel_names[i]})", f"{published_velocities[i]:.3f}")
             difference = computed_velocities[i] - published_velocities[i]
-            stat.add(f"Différence ({wheel_names[i]})", f"{difference:.3f}")
+            stat.add(f"Difference ({wheel_names[i]})", f"{difference:.3f}")
         return stat
 
 def main(args=None):

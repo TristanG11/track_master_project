@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='tristan',
     maintainer_email='tristanogandagaguerick@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='Package for launching different setup in real world',
+    license='BSD',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

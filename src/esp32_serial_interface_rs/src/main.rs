@@ -1,7 +1,9 @@
-use msg_utils::msg::{ BatteryStatus, FourMotorsFeedback, FourMotorsStatus, WheelCommands, FourMotorsPid};
-use std::sync::{Arc, Mutex};
-use diagnostic_msgs::msg::{DiagnosticArray,DiagnosticStatus,KeyValue};
+use diagnostic_msgs::msg::{DiagnosticArray, DiagnosticStatus, KeyValue};
+use msg_utils::msg::{
+    BatteryStatus, FourMotorsFeedback, FourMotorsPid, FourMotorsStatus, WheelCommands,
+};
 use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 enum MessageType {
     Error(()),
@@ -11,15 +13,13 @@ enum MessageType {
 }
 
 fn main() {
-
     // Initialize the ROS 2 context
     let context = rclrs::Context::new(std::env::args()).unwrap();
     let node = rclrs::create_node(&context, "esp32_serial_interface_node").unwrap();
 
+    //Diagnostics part :
+    let (diag_tx, diag_rx) = mpsc::channel::<DiagnosticStatus>();
 
-    //Diagnostics part : 
-    let (diag_tx,diag_rx) = mpsc::channel::<DiagnosticStatus>();
-    
     // Initialize the serial port
     let serial_port = {
         let mut serial_port = None;
@@ -35,7 +35,12 @@ fn main() {
                     break;
                 }
                 Err(e) => {
-                    eprintln!("Failed to open serial port: {} (Attempt {}/{})", e, count + 1, 5);
+                    eprintln!(
+                        "Failed to open serial port: {} (Attempt {}/{})",
+                        e,
+                        count + 1,
+                        5
+                    );
                     count += 1;
                     std::thread::sleep(Duration::from_secs(10)); // Wait 10 seconds before retrying
                 }
@@ -59,36 +64,35 @@ fn main() {
             });
             loop {
                 if let Err(e) = diag_tx.send(diag_status.to_owned()) {
-                    eprintln!("{}",e);
+                    eprintln!("{}", e);
                 }
                 std::thread::sleep(Duration::from_secs(10));
             }
-            
         } else {
-            let diag_status = DiagnosticStatus{
-                level : DiagnosticStatus::OK,
-                name : "Serial port state".to_string(),
+            let diag_status = DiagnosticStatus {
+                level: DiagnosticStatus::OK,
+                name: "Serial port state".to_string(),
                 message: "Port is open and functionning normally".to_string(),
-                hardware_id : "".to_string(),
-                values : vec![KeyValue {
-                    key : "Last sending time".to_string(),
-                    value : "No timestamp".to_string(),
-                }, KeyValue{
-                    key : "Last received time".to_string(),
-                    value : "No timestamp".to_string(),
-                }]
+                hardware_id: "".to_string(),
+                values: vec![
+                    KeyValue {
+                        key: "Last sending time".to_string(),
+                        value: "No timestamp".to_string(),
+                    },
+                    KeyValue {
+                        key: "Last received time".to_string(),
+                        value: "No timestamp".to_string(),
+                    },
+                ],
             };
             if let Err(e) = diag_tx.send(diag_status) {
-                eprintln!("{}",e);
+                eprintln!("{}", e);
             }
         }
         serial_port
     };
-        
 
     let serial_port = Arc::new(Mutex::new(serial_port));
-
-    
 
     // Create a subscriber for the topic /cmd_vel_to_send
     let _cmd_vel_subscription = node
@@ -234,7 +238,7 @@ fn main() {
         )
         .expect("Error creating the subscriber");
 
-        let _pid_subscription = node.create_subscription::<FourMotorsPid, _>(
+    let _pid_subscription = node.create_subscription::<FourMotorsPid, _>(
             "/pid_gains",
             rclrs::QOS_PROFILE_DEFAULT,
             {
@@ -245,7 +249,7 @@ fn main() {
                 let diag_tx = diag_tx.clone();
                 let mut last_sending_time: Option<std::time::Instant> = None;
                 move |msg: FourMotorsPid| {
-                    // Formatage de la commande PID
+                    // Formatting the PID command
                     let command = format!(
                         "<PID=fl:{:.2},{:.2},{:.2};fr:{:.2},{:.2},{:.2};rl:{:.2},{:.2},{:.2};rr:{:.2},{:.2},{:.2}>",
                         msg.motor_front_left.kp, msg.motor_front_left.ki, msg.motor_front_left.kd,
@@ -253,9 +257,8 @@ fn main() {
                         msg.motor_rear_left.kp, msg.motor_rear_left.ki, msg.motor_rear_left.kd,
                         msg.motor_rear_right.kp, msg.motor_rear_right.ki, msg.motor_rear_right.kd
                     );
-        
                     if let Ok(mut port) = serial_port.lock() {
-                        // Vérification de l'espace disponible dans le tampon avant l'écriture
+                        // Checking the available buffer space before writing
                         if let Some(port) = &mut *port {
                             match port.bytes_to_write() {
                                 Ok(bytes_pending) => {
@@ -272,15 +275,15 @@ fn main() {
                                                 value: bytes_pending.to_string(),
                                             }],
                                         );
-                                        return; // Ignorer cette commande
+                                        return; // Ignore this command
                                     }
                                     if space_available >= min_free_space as i32 {
-                                        // Écriture dans le port série
+                                        // Writing to the serial port
                                         match port.write_all(command.as_bytes()) {
                                             Ok(_) => {
                                                 println!("sent : {}",command);
                                                 last_sending_time = Some(Instant::now());
-                                                // Envoyer un diagnostic de succès
+                                                // Send a success diagnostic
                                                 send_diagnostic(
                                                     &diag_tx,
                                                     DiagnosticStatus::OK,
@@ -307,7 +310,7 @@ fn main() {
                                                     "Error while sending PID command to the serial port: {}",
                                                     e
                                                 );
-                                                // Envoyer un diagnostic d'erreur
+                                                // Send an error diagnostic
                                                 send_diagnostic(
                                                     &diag_tx,
                                                     DiagnosticStatus::ERROR,
@@ -328,7 +331,7 @@ fn main() {
                                             "Insufficient space in the buffer. Available: {} bytes, Required: {} bytes",
                                             space_available, min_free_space
                                         );
-                                        // Envoyer un diagnostic d'espace insuffisant
+                                        // Send a diagnostic for insufficient buffer space
                                         send_diagnostic(
                                             &diag_tx,
                                             DiagnosticStatus::WARN,
@@ -367,7 +370,7 @@ fn main() {
                         }
                     } else {
                         eprintln!("Error accessing the serial port");
-                        // Envoyer un diagnostic pour l'erreur d'accès au port
+                        // Send a diagnostic for the serial port access error
                         send_diagnostic(
                             &diag_tx,
                             DiagnosticStatus::ERROR,
@@ -379,7 +382,6 @@ fn main() {
                 }
             },
         );
-        
 
     // Create publishers
     let feedback_publisher = node
@@ -391,7 +393,9 @@ fn main() {
     let battery_status_publisher = node
         .create_publisher::<BatteryStatus>("/battery_status", rclrs::QoSProfile::default())
         .unwrap();
-    let diag_publisher = node.create_publisher::<DiagnosticArray>("/diagnostics",rclrs::QoSProfile::default()).unwrap();
+    let diag_publisher = node
+        .create_publisher::<DiagnosticArray>("/diagnostics", rclrs::QoSProfile::default())
+        .unwrap();
 
     let _t: std::thread::JoinHandle<()>;
     {
@@ -402,9 +406,9 @@ fn main() {
         let motor_status_publisher = motor_status_publisher.clone();
         let battery_status_publisher = battery_status_publisher.clone();
         let node = node.clone();
-        let mut last_feedback_rcv: Option<std::time::Instant> =None;
+        let mut last_feedback_rcv: Option<std::time::Instant> = None;
         let mut last_status_rcv: Option<std::time::Instant> = None;
-        let mut last_error_status_rcv: Option<std::time::Instant>  = None;
+        let mut last_error_status_rcv: Option<std::time::Instant> = None;
         let diag_tx = diag_tx.clone();
 
         _t = std::thread::spawn(move || {
@@ -413,61 +417,72 @@ fn main() {
                 if let Ok(mut port) = serial_port.lock() {
                     let mut temp_buffer = [0; 256];
                     if let Some(port) = &mut *port {
-                    if let Ok(size) = port.read(&mut temp_buffer) {
-                        buffer.extend_from_slice(&temp_buffer[..size]);
+                        if let Ok(size) = port.read(&mut temp_buffer) {
+                            buffer.extend_from_slice(&temp_buffer[..size]);
 
-                        // Look for complete messages delimited by `<` and `>`
-                        while let Some(start) = buffer.iter().position(|&b| b == b'<') {
-                            if let Some(end) = buffer.iter().skip(start).position(|&b| b == b'>') {
-                                // Extract the complete message between `<` and `>`
-                                let end = start + end;
-                                let message = buffer.drain(start..=end).collect::<Vec<_>>();
-                                let message =
-                                    String::from_utf8_lossy(&message[1..message.len() - 1])
-                                        .to_string();
-                                let (message_type, original_line) =
-                                    determine_message_type(&message);
+                            // Look for complete messages delimited by `<` and `>`
+                            while let Some(start) = buffer.iter().position(|&b| b == b'<') {
+                                if let Some(end) =
+                                    buffer.iter().skip(start).position(|&b| b == b'>')
+                                {
+                                    // Extract the complete message between `<` and `>`
+                                    let end = start + end;
+                                    let message = buffer.drain(start..=end).collect::<Vec<_>>();
+                                    let message =
+                                        String::from_utf8_lossy(&message[1..message.len() - 1])
+                                            .to_string();
+                                    let (message_type, original_line) =
+                                        determine_message_type(&message);
 
-                                match message_type {
-                                    MessageType::Error(()) => {
-                                        eprintln!("Error detected: {}", original_line);
-                                        last_error_status_rcv = Some(std::time::Instant::now());
-                                        send_diagnostic(
-                                            &diag_tx,
-                                            DiagnosticStatus::ERROR,
-                                            "Error Message Received".to_string(),
-                                            format!("Error detected: {}", original_line),
-                                            vec![KeyValue {
-                                                key: "Timestamp".to_string(),
-                                                value: format!("{:?}", last_error_status_rcv.unwrap()),
-                                            }],
-                                        );
-                                    }
-                                    MessageType::Feedback(()) => {
-                                        feedback_msg = parse_feedback(original_line); // Use the original line for parsing
-                                        last_feedback_rcv = Some(std::time::Instant::now());
-                                        let now = node.get_clock().now().to_ros_msg().unwrap();
-                                        feedback_msg.header.stamp.nanosec = now.nanosec;
-                                        feedback_msg.header.stamp.sec = now.sec;
-                                        if let Err(e) = feedback_publisher.publish(&feedback_msg){
-                                            eprintln!("{}",e);
+                                    match message_type {
+                                        MessageType::Error(()) => {
+                                            eprintln!("Error detected: {}", original_line);
+                                            last_error_status_rcv = Some(std::time::Instant::now());
+                                            send_diagnostic(
+                                                &diag_tx,
+                                                DiagnosticStatus::ERROR,
+                                                "Error Message Received".to_string(),
+                                                format!("Error detected: {}", original_line),
+                                                vec![KeyValue {
+                                                    key: "Timestamp".to_string(),
+                                                    value: format!(
+                                                        "{:?}",
+                                                        last_error_status_rcv.unwrap()
+                                                    ),
+                                                }],
+                                            );
                                         }
-                                    }
-                                    MessageType::Status(()) => {
-                                        (motors_status, battery_status) =
-                                            parse_status(original_line,&feedback_msg); // Use the original line for parsing
-                                        let now = node.get_clock().now().to_ros_msg().unwrap();
-                                        motors_status.header.stamp.nanosec = now.nanosec;
-                                        motors_status.header.stamp.sec = now.sec;
-                                        battery_status.header.stamp.sec = now.sec;
-                                        battery_status.header.stamp.nanosec = now.nanosec;
-                                        if let Err(e) = motor_status_publisher.publish(&motors_status){
-                                            eprintln!("{}",e);
+                                        MessageType::Feedback(()) => {
+                                            feedback_msg = parse_feedback(original_line); // Use the original line for parsing
+                                            last_feedback_rcv = Some(std::time::Instant::now());
+                                            let now = node.get_clock().now().to_ros_msg().unwrap();
+                                            feedback_msg.header.stamp.nanosec = now.nanosec;
+                                            feedback_msg.header.stamp.sec = now.sec;
+                                            if let Err(e) =
+                                                feedback_publisher.publish(&feedback_msg)
+                                            {
+                                                eprintln!("{}", e);
+                                            }
                                         }
-                                        if let Err(e) = battery_status_publisher.publish(&battery_status){
-                                            eprintln!("{}",e);
-                                        }
-                                        last_status_rcv = Some(std::time::Instant::now());
+                                        MessageType::Status(()) => {
+                                            (motors_status, battery_status) =
+                                                parse_status(original_line, &feedback_msg); // Use the original line for parsing
+                                            let now = node.get_clock().now().to_ros_msg().unwrap();
+                                            motors_status.header.stamp.nanosec = now.nanosec;
+                                            motors_status.header.stamp.sec = now.sec;
+                                            battery_status.header.stamp.sec = now.sec;
+                                            battery_status.header.stamp.nanosec = now.nanosec;
+                                            if let Err(e) =
+                                                motor_status_publisher.publish(&motors_status)
+                                            {
+                                                eprintln!("{}", e);
+                                            }
+                                            if let Err(e) =
+                                                battery_status_publisher.publish(&battery_status)
+                                            {
+                                                eprintln!("{}", e);
+                                            }
+                                            last_status_rcv = Some(std::time::Instant::now());
                                             send_diagnostic(
                                                 &diag_tx,
                                                 DiagnosticStatus::OK,
@@ -478,59 +493,58 @@ fn main() {
                                                     key: "Last Motor Status Timestamp".to_string(),
                                                     value: format!(
                                                         "{:?} ms",
-                                                        last_status_rcv.unwrap().elapsed().as_millis()
+                                                        last_status_rcv
+                                                            .unwrap()
+                                                            .elapsed()
+                                                            .as_millis()
                                                     ),
                                                 }],
                                             );
-                                    }
-                                    MessageType::Problematic(()) => {
-                                        println!("Received problematic message: {}", original_line);
-                                        send_diagnostic(
-                                            &diag_tx,
-                                            DiagnosticStatus::WARN,
-                                            "Problematic Message".to_string(),
-                                            format!(
+                                        }
+                                        MessageType::Problematic(()) => {
+                                            println!(
                                                 "Received problematic message: {}",
                                                 original_line
-                                            ),
-                                            vec![],
-                                        );
+                                            );
+                                            send_diagnostic(
+                                                &diag_tx,
+                                                DiagnosticStatus::WARN,
+                                                "Problematic Message".to_string(),
+                                                format!(
+                                                    "Received problematic message: {}",
+                                                    original_line
+                                                ),
+                                                vec![],
+                                            );
+                                        }
                                     }
+                                } else {
+                                    break; // No end of message yet, wait for more data
                                 }
-                            } else {
-                                break; // No end of message yet, wait for more data
                             }
                         }
                     }
-                }
                 }
                 std::thread::sleep(std::time::Duration::from_millis(10)); // 25 Hz
             }
         });
     }
 
-
     // Thread to process diagnostic messages
     let _diagnostics_thread = {
         let mut diag_array = DiagnosticArray::default();
         let node = node.clone();
-        std::thread::spawn(move || {
-
-            loop {
-                while let Ok(diag) = diag_rx.try_recv() {
-                    diag_array.status.push(diag.clone());
-                }
-                diag_publisher.publish(diag_array.clone());
-                std::thread::sleep(Duration::from_millis(1000));
-                
+        std::thread::spawn(move || loop {
+            while let Ok(diag) = diag_rx.try_recv() {
+                diag_array.status.push(diag.clone());
             }
-            
+            diag_publisher.publish(diag_array.clone());
+            std::thread::sleep(Duration::from_millis(1000));
         })
     };
 
     // Spin to keep the ROS 2 node active
     rclrs::spin(node).unwrap();
-
 }
 
 // Determine the type of message
@@ -555,13 +569,12 @@ fn parse_feedback(line: &str) -> FourMotorsFeedback {
     for segment in segments {
         let parts: Vec<&str> = segment.split(',').collect();
         if parts.len() == 4 {
-            if let (Some(motor_name), Some(position), Some(speed),Some(desired_speed)) = (
+            if let (Some(motor_name), Some(position), Some(speed), Some(desired_speed)) = (
                 parts.first(),
                 parts.get(1).and_then(|pos| pos.parse().ok()),
                 parts.get(2).and_then(|spd| spd.parse().ok()),
                 parts.get(3).and_then(|des| des.parse().ok()),
             ) {
-
                 match *motor_name {
                     "fl" => {
                         feedback_msg.motor_front_left.position = position;
@@ -641,7 +654,6 @@ fn parse_status(line: &str, feedback: &FourMotorsFeedback) -> (FourMotorsStatus,
     }
     (motors_status, battery_status)
 }
-
 
 fn send_diagnostic(
     diag_tx: &mpsc::Sender<DiagnosticStatus>,

@@ -27,7 +27,7 @@ hardware_interface::CallbackReturn DiffDriveArduinoHardwareInterface::on_init(co
   };
 
   node_ = rclcpp::Node::make_shared("diffdrive_arduino_node");
-  command_publisher_ = node_->create_publisher<msg_utils::msg::WheelCommands>("cmd_vel_desired", 10);
+  command_publisher_ = node_->create_publisher<msg_utils::msg::WheelCommands>("/cmd_vel_desired", 10);
   command_feedback_subscriber_ = node_->create_subscription<msg_utils::msg::FourMotorsFeedback>(
         "/cmd_vel_feedback",
         10,

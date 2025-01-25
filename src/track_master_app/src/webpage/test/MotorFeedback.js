@@ -13,11 +13,11 @@ import { Line } from "react-chartjs-2";
 import ROSLIB from "roslib";
 import ros from "../common/ROSConnection";
 
-// Enregistrer les composants nécessaires pour Chart.js
+// Register the necessary components for Chart.js
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend);
 
 const MotorFeedback = () => {
-  // États pour stocker les données des graphiques
+  // State to store chart data
   const [data, setData] = useState({
     fl: { labels: [], datasets: [{ data: [] }, { data: [] }] },
     fr: { labels: [], datasets: [{ data: [] }, { data: [] }] },
@@ -25,7 +25,7 @@ const MotorFeedback = () => {
     rr: { labels: [], datasets: [{ data: [] }, { data: [] }] },
   });
 
-  // États pour gérer le temps de réponse
+  // State to handle response times
   const [responseTimes, setResponseTimes] = useState({
     fl: null,
     fr: null,
@@ -48,18 +48,18 @@ const MotorFeedback = () => {
   });
 
   useEffect(() => {
-    // Configurer le topic ROS
+    // Configure the ROS topic
     const topic = new ROSLIB.Topic({
       ros: ros,
       name: "/motor_feedback",
       messageType: "msg_utils/FourMotorsFeedback",
     });
 
-    // Abonnement au topic
+    // Subscribe to the topic
     topic.subscribe((message) => {
       const time = new Date().toLocaleTimeString();
 
-      // Récupérer les données des moteurs
+      // Extract motor data
       const motors = {
         fl: message.motor_front_left,
         fr: message.motor_front_right,
@@ -72,26 +72,26 @@ const MotorFeedback = () => {
         const desiredSpeed = motor.desired_speed;
         const trueSpeed = motor.speed;
 
-        // Si la vitesse désirée change, réinitialiser le calcul
+        // If the desired speed changes, reset the calculation
         if (desiredSpeed !== lastDesiredSpeed[motorKey]) {
           setLastDesiredSpeed((prev) => ({ ...prev, [motorKey]: desiredSpeed }));
           setStartTime((prev) => ({ ...prev, [motorKey]: Date.now() }));
-          setResponseTimes((prev) => ({ ...prev, [motorKey]: null })); // Réinitialiser le temps de réponse
+          setResponseTimes((prev) => ({ ...prev, [motorKey]: null })); // Reset response time
         }
 
-        // Si le temps de réponse n'a pas encore été calculé
+        // If the response time has not yet been calculated
         if (responseTimes[motorKey] === null && desiredSpeed > 0) {
-          const targetSpeed = desiredSpeed * 0.95; // 95% de desired_speed
+          const targetSpeed = desiredSpeed * 0.95; // 95% of desired_speed
           if (Math.abs(trueSpeed - targetSpeed) <= 0.05 * desiredSpeed) {
             const t1 = Date.now();
             setResponseTimes((prev) => ({
               ...prev,
               [motorKey]: ((t1 - startTime[motorKey]) / 1000).toFixed(2),
-            })); // Temps en secondes
+            })); // Time in seconds
           }
         }
 
-        // Mettre à jour les données pour le graphique
+        // Update the chart data
         setData((prev) => ({
           ...prev,
           [motorKey]: {
@@ -115,7 +115,7 @@ const MotorFeedback = () => {
       });
     });
 
-    return () => topic.unsubscribe(); // Nettoyer l'abonnement
+    return () => topic.unsubscribe(); // Clean up the subscription on component unmount
   }, [responseTimes, lastDesiredSpeed, startTime]);
 
   const options = {

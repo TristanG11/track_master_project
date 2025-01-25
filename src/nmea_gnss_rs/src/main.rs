@@ -59,11 +59,11 @@ fn main() {
     let port = serialport::new(& *serial_port.get(), baud_rate.get() as u32)
         .timeout(std::time::Duration::from_secs(2))
         .open()
-        .expect("Impossible d'ouvrir le port série");
+        .expect("Failed to open serial port");
 
         let (lat0, lon0, alt0) = (lat0.get().to_radians(), lon0.get().to_radians(), alt0.get());
         println!(
-            "Coordonnées d'ancrage : lat0={}, lon0={}, alt0={}",
+            "Anchor coordinates: lat0={}, lon0={}, alt0={}",
             lat0, lon0, alt0
         );
         
@@ -163,21 +163,21 @@ fn main() {
                         }
                     }
                     Err(e) => {
-                        eprintln!("Erreur lors de l'analyse de la phrase NMEA : {}", e);
+                        eprintln!("Error while parsing NMEA sentence: {}", e);
                     }
                 }
             }
             Ok(_) => {
-                println!("Pas de données, en attente...");
+                println!("No data, waiting...");
             }
             Err(e) => {
-                eprintln!("Erreur de lecture : {}", e);
+                eprintln!("Read error: {}", e);
                 break;
             }
         }
     }
 
-    println!("Fin du programme.");
+    println!("End of program.");
 }
 
 

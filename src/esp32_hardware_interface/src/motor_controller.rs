@@ -17,7 +17,7 @@ impl MotorController {
         }
     }
 
-    /// Adds a motor to the controller
+    // Adds a motor to the controller
     pub fn add_motor(&mut self, motor: Motor) -> Result<(), String> {
         if let Ok(mut motors) = self.motors.lock() {
             motors.insert(motor.name.clone(), motor);
@@ -27,7 +27,7 @@ impl MotorController {
         }
     }
 
-    /// Changes the PID gains for a specific motor
+    // Changes the PID gains for a specific motor
     pub fn change_pid_gain(
         &mut self,
         name: &String,
@@ -49,14 +49,14 @@ impl MotorController {
         }
     }
 
-    /// Returns feedback from all motors as a formatted string
+    // Returns feedback from all motors as a formatted string
     pub fn get_feedback(&self) -> Result<String, String> {
         if let Ok(motors) = self.motors.lock() {
             let mut feedback = String::from("<FB=");
             for (name, motor) in motors.iter() {
                 feedback.push_str(&format!(
                     "{},{},{},{};",
-                    name, motor.state.position, motor.state.speed,motor.state.desired_speed
+                    name, motor.state.position, motor.state.speed, motor.state.desired_speed
                 ));
             }
             feedback.push('>');
@@ -66,7 +66,7 @@ impl MotorController {
         }
     }
 
-    /// Sets up a timer for periodic tasks
+    // Sets up a timer for periodic tasks
     pub fn setup_timer(
         &mut self,
         timer: &mut TimerDriver,
@@ -113,7 +113,7 @@ impl MotorController {
         Ok(())
     }
 
-    /// Handles incoming commands to update motor states
+    // Handles incoming commands to update motor states
     pub fn handle_command(&mut self, cmd: &String) -> Result<(), String> {
         if !cmd.starts_with('<') || !cmd.ends_with('>') {
             return Err("Error: missing < or > in stream".to_string());
@@ -142,7 +142,7 @@ impl MotorController {
             }
         } else if cmd.contains("PID") {
             let cmd_body = &cmd[5..cmd.len() - 1]; // Remove '<PID=' and '>' from the command
-            println!("<{}>",cmd_body);
+            println!("<{}>", cmd_body);
             for segment in cmd_body.split(';') {
                 if let Some((name, values)) = segment.split_once(':') {
                     let gains: Vec<&str> = values.split(',').collect();
@@ -153,7 +153,9 @@ impl MotorController {
                             gains[2].trim().parse::<f32>(),
                         ) {
                             // Appelle la fonction change_pid_gain
-                            if let Err(e) = self.change_pid_gain(&name.trim().to_string(), kp, ki, kd) {
+                            if let Err(e) =
+                                self.change_pid_gain(&name.trim().to_string(), kp, ki, kd)
+                            {
                                 return Err(format!("<Error: {}>", e));
                             }
                         } else {
@@ -173,7 +175,7 @@ impl MotorController {
         Ok(())
     }
 
-    /// Processes all motors by updating their states and applying commands
+    // Processes all motors by updating their states and applying commands
     pub fn process_motors(&mut self) -> Result<(), String> {
         if let Ok(mut motors) = self.motors.lock() {
             for (_, motor) in motors.iter_mut() {

@@ -29,10 +29,10 @@ public:
   // Exports the command interfaces, which allow sending commands to the robot
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
-  // Reads data from the hardware (e.g., encoders, sensors) and updates the hardware state
+  // Reads data from the hardware and updates the hardware state
   hardware_interface::return_type read(const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
-  // Writes commands to the hardware (e.g., motor speeds) based on the current commands
+  // Writes commands to the hardware  based on the current commands
   hardware_interface::return_type write(const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 private:

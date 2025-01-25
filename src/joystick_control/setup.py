@@ -15,10 +15,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='tristan',
+    maintainer='Tristan Agoumbi',
     maintainer_email='tristanogandagaguerick@gmail.com',
     description='Control the robot speed using a PS4 controller',
-    license='TODO: License declaration',
+    license='BSD',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

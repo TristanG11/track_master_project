@@ -2,41 +2,40 @@ import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import ROSLIB from "roslib";
-import ros from "../common/ROSConnection"; // Assure-toi que ros est bien configuré.
-import L from "leaflet"
+import ros from "../common/ROSConnection"; // Make sure ROS is properly configured.
+import L from "leaflet";
 
 const GNSSDisplay = () => {
-  // État pour la position GNSS
+  // State for GNSS position
   const [gnssPosition, setGnssPosition] = useState({
-    lat: 45.8566, // Coordonnées initiales (exemple : Paris)
+    lat: 45.8566, // Initial coordinates (example: Paris)
     lng: 5.3522,
   });
 
   const customIcon = new L.Icon({
-    iconUrl: "https://leafletjs.com/examples/custom-icons/leaf-green.png", // URL de l'image
-    iconSize: [38, 38], // Taille de l'icône
-    iconAnchor: [22, 38], // Point d'ancrage
-    popupAnchor: [0, -40], // Position du popup
+    iconUrl: "https://leafletjs.com/examples/custom-icons/leaf-green.png", // URL of the icon image
+    iconSize: [38, 38], // Icon size
+    iconAnchor: [22, 38], // Anchor point
+    popupAnchor: [0, -40], // Popup position
   });
 
   useEffect(() => {
-    // Souscription au topic GNSS
+    // Subscribe to the GNSS topic
     const gnssTopic = new ROSLIB.Topic({
       ros: ros,
-      name: "/gnss/fix", // Assure-toi que le topic est correct
-      messageType: "sensor_msgs/NavSatFix", // Message standard GNSS
+      name: "/gnss/fix", // Make sure the topic is correct
+      messageType: "sensor_msgs/NavSatFix", // Standard GNSS message
     });
 
-    // Callback pour mettre à jour la position
+    // Callback to update the position
     gnssTopic.subscribe((message) => {
       setGnssPosition({
         lat: message.latitude,
         lng: message.longitude,
       });
-      console.log()
     });
 
-    // Nettoyage lors du démontage du composant
+    // Cleanup when the component unmounts
     return () => {
       gnssTopic.unsubscribe();
     };
@@ -44,18 +43,17 @@ const GNSSDisplay = () => {
 
   return (
     <MapContainer
-      center={[gnssPosition.lat, gnssPosition.lng]} // Centre de la carte sur la position GNSS
+      center={[gnssPosition.lat, gnssPosition.lng]} // Center the map on the GNSS position
       zoom={13}
       style={{ height: "400px", width: "100%" }}
       icon={customIcon}
     >
-      
-      {/* Fond de carte OpenStreetMap */}
+      {/* OpenStreetMap background */}
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      {/* Marqueur pour afficher la position GNSS */}
+      {/* Marker to display the GNSS position */}
       <Marker position={[gnssPosition.lat, gnssPosition.lng]}>
         <Popup>
           GNSS Position<br />

@@ -19,8 +19,7 @@ def generate_launch_description():
 
     # Include the robot_state_publisher launch file, provided by our own package. Force sim time to be enabled
 
-
-    pkg_name_des='track_master' #<--- CHANGE ME
+    pkg_name_des='track_master'
     pkg_name_ctrl = 'track_master_control'
 
     rsp = IncludeLaunchDescription(

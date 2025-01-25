@@ -10,9 +10,9 @@ import CameraView from "./camera/CameraView"
 const AppLayout = () => {
   return (
     <div style={{ padding: "20px" }}>
-      <h1 style={{ textAlign: "center" }}>Robot Interface</h1>
+      <h1 style={{ textAlign: "center" }}>Track Master Interface</h1>
 
-      {/* Disposition côte à côte */}
+      {/* Side-by-side layout */}
       <div
         style={{
           display: "flex",
@@ -26,7 +26,7 @@ const AppLayout = () => {
         <BatteryStatus />
       </div>
 
-      {/* GNSS et LiDAR en dessous */}
+      {/* GNSS and LiDAR below */}
       
       <div style={{
           display: "flex",
@@ -41,14 +41,12 @@ const AppLayout = () => {
         <CameraView />
       </div>
 
-
-      
       <div style={{ marginTop: "30px" }}>
         <GNSSDisplay />
       </div>
     
 
-      {/* Fenêtre de test PID */}
+      {/* PID test window */}
       <div style={{ marginTop: "30px" }}>
         <MotorPIDTuner />
       </div>

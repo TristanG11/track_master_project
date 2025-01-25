@@ -2,7 +2,7 @@
 <package format="2">
   <name>diffdrive_arduino</name>
   <version>0.0.1</version>
-  <description>Hardware interface for a differential drive robot using Boost.Asio for serial communication with Arduino.</description>
+  <description>Hardware interface for a differential drive </description>
 
   <maintainer email="tristanogandagaguerick@gmail.com">Tristan Guerick Agoumbi Ogandaga</maintainer>
   <license>BSD</license>

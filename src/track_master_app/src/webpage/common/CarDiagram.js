@@ -5,7 +5,7 @@ const CarDiagram = ({ motorStatus }) => {
   return (
     <Stage width={500} height={300}>
       <Layer>
-        {/* Châssis */}
+        {/* Chassis */}
         <Rect
           x={175}
           y={100}
@@ -17,13 +17,13 @@ const CarDiagram = ({ motorStatus }) => {
           fill="#d3d3d3"
         />
 
-        {/* Roues */}
+        {/* Wheels */}
         <Circle x={175} y={100} radius={10} fill="black" />
         <Circle x={250} y={100} radius={10} fill="black" />
         <Circle x={175} y={250} radius={10} fill="black" />
         <Circle x={250} y={250} radius={10} fill="black" />
 
-        {/* Informations pour chaque roue */}
+        {/* Informations for each wheel */}
         <Text x={30} y={80} text={`FL Speed: ${motorStatus.motor_front_left.speed} m/s`} />
         <Text x={30} y={100} text={`FL Voltage: ${motorStatus.motor_front_left.voltage} V`} />
         <Text x={30} y={120} text={`FL Current: ${motorStatus.motor_front_left.current} A`} />

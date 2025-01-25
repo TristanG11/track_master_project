@@ -3,7 +3,7 @@
   <name>esp32_serial_interface_rs</name>
   <version>0.1.0</version>
   <description>
-    A ROS 2 package written in Rust.
+    A package for interfacing main computer and esp32 using serial port.
   </description>
 
   <maintainer email="tristanogandagaguerick@gmail.com">Tristan Guerick Agoumbi Ogandaga</maintainer>
