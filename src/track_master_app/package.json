@@ -1,0 +1,46 @@
+{
+  "name": "track_master_app",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@react-google-maps/api": "^2.20.5",
+    "chart.js": "^4.4.7",
+    "cra-template": "1.2.0",
+    "konva": "^9.3.18",
+    "leaflet": "^1.9.4",
+    "react": "^19.0.0",
+    "react-battery-gauge": "^1.0.7",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^19.0.0",
+    "react-joystick-component": "^6.2.1",
+    "react-konva": "^19.0.2",
+    "react-leaflet": "^5.0.0",
+    "react-scripts": "5.0.1",
+    "roslib": "^1.4.1",
+    "web-vitals": "^4.2.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

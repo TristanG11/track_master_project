@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <!-- Nom du package -->
+  <name>nmea_gnss_cpp</name>
+
+  <!-- Version du package -->
+  <version>0.1.0</version>
+
+  <!-- Description du package -->
+  <description>
+    Package ROS2 en C++ pour le parsing des données GNSS au format NMEA, utilisant des messages standard et personnalisés.
+  </description>
+
+  <!-- Informations sur le mainteneur -->
+  <maintainer email="tristanogandagaguerick@gmail.com">Tristan Guerick Agoumbi Ogandaga</maintainer>
+
+  <!-- Licence -->
+  <license>Apache-2.0</license>
+
+  <!-- Dépendances pour la compilation -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <!-- Dépendances nécessaires à l'exécution -->
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>msg_utils</depend>
+  <depend>boost</depend>
+
+  <!-- Dépendances pour les tests -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>gtest</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <!-- Exportation des informations pour ROS2 -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

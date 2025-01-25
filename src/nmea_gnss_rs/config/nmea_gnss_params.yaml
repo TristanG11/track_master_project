@@ -1,0 +1,12 @@
+nmea_gnss_node_rs:
+  ros__parameters:
+    node_name: "nmea_gnss_node_rs"
+    serial_port: "/dev/ttyUSB0"
+    baud_rate: 38400
+    lat0: 45.1884999
+    lon0: 5.7588211
+    alt0: 0.0
+    gnss_fix_topic: "/gnss/fix"
+    heading_vel_topic: "/gnss/heading_vel"
+    twist_topic: "/gnss/twist"
+    pose_topic: "/gnss/pose"
