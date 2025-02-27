@@ -88,7 +88,7 @@
       <latitude_deg>45.18847618</latitude_deg>
       <longitude_deg>5.758790</longitude_deg>
       <elevation>0</elevation>
-      <heading_deg>90</heading_deg>
+      <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <state world_name='default'>
       <sim_time>38 970000000</sim_time>

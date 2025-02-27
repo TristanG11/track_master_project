@@ -20,5 +20,6 @@
   <xacro:include filename="$(find track_master)/urdf/camera.xacro" />
 
   <xacro:include filename="$(find track_master)/urdf/ros2_control.xacro" />
+  
 
 </robot>
