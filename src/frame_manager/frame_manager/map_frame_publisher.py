@@ -11,11 +11,14 @@ import math
 from rosgraph_msgs.msg import Clock
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy
 from msg_utils.msg import GpsVelocityHeading
-
-# Define an anchor point: lat 45.1884999, lon 5.7588211
-anchor_lat = 45.1884999
+from pymap3d import geodetic2enu
+import pymap3d
+ell = pymap3d.Ellipsoid.from_name('wgs84')
+from nav_msgs.msg import Odometry
+# Define an anchor point: lat 45.18847618, lon 5.7588211
+anchor_lat = 45.18847618
 anchor_lon = 5.7588211
-
+anchor_alt = 0.0
 
 class MapFramePublisher(Node):
     def __init__(self):
@@ -39,13 +42,19 @@ class MapFramePublisher(Node):
 
         # Variables
         self.first_fix = None
+        self.current_fix = NavSatFix()
         self.first_fix_fetched = False
         self.map_frame_computed = False
 
         # Transform broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
-        self.timer = self.create_timer(0.2, self.publish_transform)
+        self.timer = self.create_timer(0.04, self.publish_transform)
         self.map_to_odom = TransformStamped()
+
+        # Odometry
+        self.odom_msg = Odometry()
+        self.odom_pub = self.create_publisher(Odometry,"/gnss/odom",10)
+        self.odom_timer = self.create_timer(0.2,self.geodetic_to_odom)
 
     def gps_cb(self, msg):
         """
@@ -57,7 +66,8 @@ class MapFramePublisher(Node):
                 self.first_fix_fetched = True
                 self.get_logger().info(f"First GNSS Fix: {msg.latitude}, {msg.longitude}, {msg.altitude}")
                 self.compute_map_frame()
-                self.destroy_subscription(self.gnss_sub)
+                #self.destroy_subscription(self.gnss_sub)
+        self.current_fix = msg
 
     def gnss_vel_heading_cb(self, msg):
         """
@@ -85,7 +95,7 @@ class MapFramePublisher(Node):
             e, n, u = pm.geodetic2enu(
                 anchor_lat,
                 anchor_lon,
-                self.first_fix.altitude,  # Use 0 altitude for anchor point
+                anchor_alt,  # Use 0 altitude for anchor point
                 self.first_fix.latitude,
                 self.first_fix.longitude,
                 self.first_fix.altitude,
@@ -118,6 +128,48 @@ class MapFramePublisher(Node):
             if not self.use_sim_time:
                 self.map_to_odom.header.stamp = self.get_clock().now().to_msg()
             self.tf_broadcaster.sendTransform(self.map_to_odom)
+
+    def geodetic_to_odom(self):
+        if self.current_fix and self.first_fix_fetched and self.map_frame_computed:
+            # Convert the current GNSS fix to ENU coordinates relative to the anchor point
+            e, n, u = pymap3d.geodetic2enu(
+                self.current_fix.latitude,
+                self.current_fix.longitude,
+                self.current_fix.altitude,
+                anchor_lat,
+                anchor_lon,
+                anchor_alt,
+                ell=pymap3d.Ellipsoid.from_name('wgs84')
+            )
+
+            # Create a point in the 'map' frame
+            point_map = [e, n, u]
+
+            # Apply the translation from the transformation
+            x_odom = point_map[0] + self.map_to_odom.transform.translation.x
+            y_odom = point_map[1] + self.map_to_odom.transform.translation.y
+            z_odom = point_map[2] + self.map_to_odom.transform.translation.z
+
+            # Populate the odometry message with the adjusted ENU coordinates
+            self.odom_msg.header.stamp = self.get_clock().now().to_msg()
+            self.odom_msg.header.frame_id = 'odom'
+            self.odom_msg.pose.pose.position.x = x_odom
+            self.odom_msg.pose.pose.position.y = y_odom
+            self.odom_msg.pose.pose.position.z = z_odom
+
+            # Assume no additional rotation from map to odom
+            self.odom_msg.pose.pose.orientation.x = 0.0
+            self.odom_msg.pose.pose.orientation.y = 0.0
+            self.odom_msg.pose.pose.orientation.z = 0.0
+            self.odom_msg.pose.pose.orientation.w = 1.0
+
+            self.odom_pub.publish(self.odom_msg)
+
+
+         
+
+
+        
 
 
 def main():

@@ -1252,6 +1252,10 @@ name = "rclrs_example_msgs"
 version = "0.4.1"
 
 [[patch.unused]]
+name = "robot_localization"
+version = "3.5.3"
+
+[[patch.unused]]
 name = "rosgraph_msgs"
 version = "1.2.1"
 
