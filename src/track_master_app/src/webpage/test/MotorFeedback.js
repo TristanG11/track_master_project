@@ -51,7 +51,7 @@ const MotorFeedback = () => {
     // Configure the ROS topic
     const topic = new ROSLIB.Topic({
       ros: ros,
-      name: "/motor_feedback",
+      name: "/cmd_vel_feedback",
       messageType: "msg_utils/FourMotorsFeedback",
     });
 

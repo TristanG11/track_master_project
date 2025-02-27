@@ -34,6 +34,7 @@ class JoystickControlNode(Node):
             ]
         )
 
+
         # Retrieve parameters
         self.twist_topic = self.get_parameter('twist_topic').value
         self.cmd_type_topic = self.get_parameter('cmd_type_topic').value
@@ -57,7 +58,7 @@ class JoystickControlNode(Node):
         self.angular_speed = 0.0
         self.msg = Twist()
 
-        self.create_subscription(String,self.cmd_type_topic,self.cmd_type_cb)
+        self.create_subscription(String,self.cmd_type_topic,self.cmd_type_cb,10)
 
         # Initialize Pygame and joystick
         pygame.init()
@@ -130,7 +131,7 @@ class JoystickControlNode(Node):
 
     def update(self):
         if self.cmd_type != "ps4_controller":
-            self.get_logger().info("Joystick disabled by /cmd_type_topic. Skipping update.")
+            #self.get_logger().info("Joystick disabled by /cmd_type_topic. Skipping update.")
             return
         
         if pygame.joystick.get_count() == 0:
