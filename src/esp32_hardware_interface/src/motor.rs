@@ -43,7 +43,7 @@ impl Motor {
 
         // Initialize PID controller with default gains
         let pid = MotorPID::new(10.0, 5.0, 0.3);
-
+        //let pid = MotorPID::new(0.0, 0.0, 0.0);
         // Initialize encoder
         let encoder = Encoder::new(pcnt, encoder_a_pin, encoder_b_pin).unwrap();
 
