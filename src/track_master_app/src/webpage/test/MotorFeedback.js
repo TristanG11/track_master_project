@@ -116,7 +116,7 @@ const MotorFeedback = () => {
     });
 
     return () => topic.unsubscribe(); // Clean up the subscription on component unmount
-  }, [responseTimes, lastDesiredSpeed, startTime]);
+  }, [/*responseTimes, lastDesiredSpeed, startTime*/]);
 
   const options = {
     responsive: true,
