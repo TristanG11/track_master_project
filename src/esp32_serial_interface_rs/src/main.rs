@@ -2,6 +2,7 @@ use diagnostic_msgs::msg::{DiagnosticArray, DiagnosticStatus, KeyValue};
 use msg_utils::msg::{
     BatteryStatus, FourMotorsFeedback, FourMotorsPid, FourMotorsStatus, WheelCommands,
 };
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -94,10 +95,19 @@ fn main() {
 
     let serial_port = Arc::new(Mutex::new(serial_port));
 
+    // Sender / receiver for serial_port_writing : 
+
+    let (tx,rx) = mpsc::channel();
+
+    // flag to disable command sending when we update pid for a while  // 12H
+    let active_pid_update = Arc::new(AtomicBool::new(false));
+
     // Create a subscriber for the topic /cmd_vel_to_send
+
+
     let _cmd_vel_subscription = node
         .create_subscription::<WheelCommands, _>(
-            "/cmd_vel_to_send",
+            "/cmd_vel_desired",
             rclrs::QOS_PROFILE_DEFAULT,
             {
                 let serial_port = serial_port.clone();
@@ -106,6 +116,8 @@ fn main() {
                 let max_buffer_size: u32 = 64; // Maximum allowed send size
                 let diag_tx = diag_tx.clone();
                 let mut last_sending_time: Option<std::time::Instant> = None;
+                let active_pid_update = active_pid_update.clone();
+                let tx = tx.clone();
                 move |msg: WheelCommands| {
                     let command = format!(
                         "<CMD=fl:{:.2};fr:{:.2};rl:{:.2};rr:{:.2}>",
@@ -114,131 +126,21 @@ fn main() {
                         msg.rear_left_wheel_speed,
                         msg.rear_right_wheel_speed
                     );
+                    if !active_pid_update.load(std::sync::atomic::Ordering::Relaxed){
+                        if let Err(e) = tx.send(command){
 
-                    if let Ok(mut port) = serial_port.lock() {
-                        // Check available space in the buffer before writing
-                        if let Some(port) = &mut *port {
-                        match port.bytes_to_write() {
-                            Ok(bytes_pending) => {
-                                let space_available: i32 = buffer_size as i32 - bytes_pending as i32;
-                                if bytes_pending > max_buffer_size {
-                                    println!("Too many data in the send buffer. Ignoring the command.");
-                                    send_diagnostic(
-                                        &diag_tx,
-                                        DiagnosticStatus::WARN,
-                                        "Command Ignored".to_string(),
-                                        "Send buffer is full".to_string(),
-                                        vec![KeyValue {
-                                            key: "Bytes Pending".to_string(),
-                                            value: bytes_pending.to_string(),
-                                        }],
-                                    );
-                                    return; // Ignore this command
-                                }
-                                if space_available >= min_free_space as i32 {
-                                    // Write to the serial port
-                                   /*  match port.write_all(command.as_bytes()) {
-                                        Ok(_) => { /* Command sent successfully */
-                                            last_sending_time = Some(Instant::now());
-                                            // Send diagnostic for successful command
-                                            send_diagnostic(
-                                                &diag_tx,
-                                                DiagnosticStatus::OK,
-                                                "Command Sent".to_string(),
-                                                "Command sent to serial port successfully"
-                                                    .to_string(),
-                                                vec![
-                                                    KeyValue {
-                                                        key: "Last Sending Time".to_string(),
-                                                        value: format!(
-                                                            "{:?} ms",
-                                                            last_sending_time.unwrap().elapsed().as_millis()
-                                                        ),
-                                                    },
-                                                    KeyValue {
-                                                        key: "Command".to_string(),
-                                                        value: command.clone(),
-                                                    },
-                                                ],
-                                            );
-
-                                        }
-                                        Err(e) => {
-                                            eprintln!("Error while sending command to the serial port: {}", e);
-                                            // Send diagnostic for failed command
-                                            send_diagnostic(
-                                                &diag_tx,
-                                                DiagnosticStatus::ERROR,
-                                                "Command Send Failed".to_string(),
-                                                format!(
-                                                    "Failed to send command: {}",
-                                                    e.to_string()
-                                                ),
-                                                vec![KeyValue {
-                                                    key: "Error".to_string(),
-                                                    value: e.to_string(),
-                                                }],
-                                            );}
-                                    }*/
-                                } else {
-                                    println!(
-                                        "Insufficient space in the buffer. Available: {} bytes, Required: {} bytes",
-                                        space_available, min_free_space
-                                    );
-                                    // Send diagnostic for insufficient buffer space
-                                    send_diagnostic(
-                                        &diag_tx,
-                                        DiagnosticStatus::WARN,
-                                        "Insufficient Buffer Space".to_string(),
-                                        "Not enough space in the serial buffer".to_string(),
-                                        vec![
-                                            KeyValue {
-                                                key: "Available Space".to_string(),
-                                                value: space_available.to_string(),
-                                            },
-                                            KeyValue {
-                                                key: "Required Space".to_string(),
-                                                value: min_free_space.to_string(),
-                                            },
-                                        ],
-                                    );
-                                }
-                            }
-                            Err(e) => {
-                                eprintln!("Error while checking available buffer space: {}", e);
-                                send_diagnostic(
-                                    &diag_tx,
-                                    DiagnosticStatus::ERROR,
-                                    "Buffer Check Failed".to_string(),
-                                    format!(
-                                        "Error checking available buffer space: {}",
-                                        e.to_string()
-                                    ),
-                                    vec![KeyValue {
-                                        key: "Error".to_string(),
-                                        value: e.to_string(),
-                                    }],
-                                );
-                            }
-                        }
+                        }     
+                    } // 12H
+                    else {
+                        println!("active pid is set to true, we cannot send any command");
                     }
-                    } else {
-                        eprintln!("Error accessing the serial port");
-                        // Send diagnostic for port access error
-                        send_diagnostic(
-                            &diag_tx,
-                            DiagnosticStatus::ERROR,
-                            "Serial Port Access Failed".to_string(),
-                            "Failed to access the serial port".to_string(),
-                            vec![],
-                        );
-                    }
+                    
                 }
             },
         )
         .expect("Error creating the subscriber");
 
-    let _pid_subscription = node.create_subscription::<FourMotorsPid, _>(
+    /*let _pid_subscription = node.create_subscription::<FourMotorsPid, _>(
             "/pid_gains",
             rclrs::QOS_PROFILE_DEFAULT,
             {
@@ -248,15 +150,45 @@ fn main() {
                 let max_buffer_size: u32 = 64; // Maximum allowed send size
                 let diag_tx = diag_tx.clone();
                 let mut last_sending_time: Option<std::time::Instant> = None;
+                let active_pid_update = active_pid_update.clone();
+                let tx = tx.clone();
                 move |msg: FourMotorsPid| {
                     // Formatting the PID command
+                    active_pid_update.store(true, std::sync::atomic::Ordering::Relaxed);  // 12H
+                    println!("active pid update set to true");
+
                     let command = format!(
-                        "<PID=fl:{:.2},{:.2},{:.2};fr:{:.2},{:.2},{:.2};rl:{:.2},{:.2},{:.2};rr:{:.2},{:.2},{:.2}>",
+                        "<PID=fr:{:.2},{:.2},{:.2};fl:{:.2},{:.2},{:.2};rl:{:.2},{:.2},{:.2};rr:{:.2},{:.2},{:.2}>",
                         msg.motor_front_left.kp, msg.motor_front_left.ki, msg.motor_front_left.kd,
                         msg.motor_front_right.kp, msg.motor_front_right.ki, msg.motor_front_right.kd,
                         msg.motor_rear_left.kp, msg.motor_rear_left.ki, msg.motor_rear_left.kd,
                         msg.motor_rear_right.kp, msg.motor_rear_right.ki, msg.motor_rear_right.kd
                     );
+                    /*let command = format!(
+                        "<PID=fr:{:.2},{:.2},{:.2}>",
+                        msg.motor_front_right.kp, msg.motor_front_right.ki, msg.motor_front_right.kd,
+                    );*/
+                    
+                    if let Err(e) = tx.send(command){
+
+                    }
+                   }
+            },
+        );*/  // That will be for a further improve   
+    
+    // thread for sending commmands 
+
+    let sender_thread = {
+        let buffer_size: u32 = 512; // Buffer size on ESP32
+        let min_free_space: u32 = 128; // Minimum required space before writing
+        let max_buffer_size: u32 = 128; // Maximum allowed send size
+        let diag_tx = diag_tx.clone();
+        let mut last_sending_time: Option<std::time::Instant> = None;
+        let active_pid_update = active_pid_update.clone();
+        let  serial_port = serial_port.clone();
+        std::thread::spawn(move || loop {
+            while let Ok(command) = rx.recv() {  // 12H
+                {
                     if let Ok(mut port) = serial_port.lock() {
                         // Checking the available buffer space before writing
                         if let Some(port) = &mut *port {
@@ -275,14 +207,22 @@ fn main() {
                                                 value: bytes_pending.to_string(),
                                             }],
                                         );
-                                        return; // Ignore this command
+                                        //return; // Ignore this command
                                     }
                                     if space_available >= min_free_space as i32 {
                                         // Writing to the serial port
+                                        if !command.contains("PID"){
+                                            //std::thread::sleep(Duration::from_millis(50));
+                                        }  // wait before sending a cmd 12H
                                         match port.write_all(command.as_bytes()) {
                                             Ok(_) => {
-                                                println!("sent : {}",command);
                                                 last_sending_time = Some(Instant::now());
+                                                if command.contains("PID"){
+                                                    std::thread::sleep(Duration::from_millis(50));
+                                                    active_pid_update.store(false, std::sync::atomic::Ordering::Relaxed);
+                                                    println!("active pid update set to false");
+                                                    std::thread::sleep(Duration::from_millis(50));
+                                                } // 12H
                                                 // Send a success diagnostic
                                                 send_diagnostic(
                                                     &diag_tx,
@@ -380,8 +320,12 @@ fn main() {
                         );
                     }
                 }
-            },
-        );
+                
+            }
+            //std::thread::sleep(Duration::from_millis(10));
+        })
+    };
+
 
     // Create publishers
     let feedback_publisher = node
@@ -397,7 +341,7 @@ fn main() {
         .create_publisher::<DiagnosticArray>("/diagnostics", rclrs::QoSProfile::default())
         .unwrap();
 
-    let _t: std::thread::JoinHandle<()>;
+    let t: std::thread::JoinHandle<()>;
     {
         let mut feedback_msg = FourMotorsFeedback::default();
         let (mut motors_status, mut battery_status) =
@@ -411,13 +355,14 @@ fn main() {
         let mut last_error_status_rcv: Option<std::time::Instant> = None;
         let diag_tx = diag_tx.clone();
 
-        _t = std::thread::spawn(move || {
-            let mut buffer = Vec::new();
+        t = std::thread::spawn(move || {
+            
             loop {
                 if let Ok(mut port) = serial_port.lock() {
                     let mut temp_buffer = [0; 256];
                     if let Some(port) = &mut *port {
                         if let Ok(size) = port.read(&mut temp_buffer) {
+                            let mut buffer = Vec::new();  // 12H
                             buffer.extend_from_slice(&temp_buffer[..size]);
 
                             // Look for complete messages delimited by `<` and `>`
@@ -525,11 +470,11 @@ fn main() {
                         }
                     }
                 }
-                std::thread::sleep(std::time::Duration::from_millis(10)); // 25 Hz
+                std::thread::sleep(std::time::Duration::from_millis(25)); // 25 Hz for feedback but we poll the rx_buffer at 40 Hz  // 12H
             }
         });
     }
-
+    
     // Thread to process diagnostic messages
     let _diagnostics_thread = {
         let mut diag_array = DiagnosticArray::default();
@@ -564,6 +509,7 @@ fn determine_message_type(line: &str) -> (MessageType, &str) {
 
 // Parse a feedback message
 fn parse_feedback(line: &str) -> FourMotorsFeedback {
+    //println!("got feedback");
     let mut feedback_msg = FourMotorsFeedback::default();
     let segments: Vec<&str> = line.split(';').collect();
     for segment in segments {
