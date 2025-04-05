@@ -9,7 +9,9 @@ pub const RAD_PER_TICK: f32 = 2.0 * PI / 2096.0;
 // Radius of the wheel in meters
 pub const WHEEL_RADIUS: f32 = 0.06;
 
+const POSITION_UPDATE_FACTOR: f32 = WHEEL_RADIUS * TIMER_FREQUENCY_SEC;
 // Enum representing motor directions
+#[derive(PartialEq)]
 pub enum Direction {
     Forward,
     Backward,
@@ -37,7 +39,7 @@ impl MotorState {
 
     /// Computes and updates the position of the motor based on speed
     pub fn compute_position(&mut self) -> f32 {
-        self.position += self.speed * TIMER_FREQUENCY_SEC * WHEEL_RADIUS;
+        self.position += self.speed * POSITION_UPDATE_FACTOR;
         self.position
     }
 

@@ -30,8 +30,8 @@ impl Encoder {
             pcnt,
             Some(pin_a),
             Some(pin_b),
-            Option::<AnyInputPin>::None,
-            Option::<AnyInputPin>::None,
+            None::<AnyInputPin>,
+            None::<AnyInputPin>,
         ) {
             Ok(unit) => unit,
             Err(e) => return Err(e),
@@ -83,14 +83,14 @@ impl Encoder {
         // Tracks overflow in `approx_value: Arc<AtomicI32>`
         // This is useful for odometry in a wheeled robot
         unsafe {
-            let approx_value = approx_value.clone();
+            let approx_value = Arc::clone(&approx_value);
             if let Err(e) = unit.subscribe(move |status| {
                 let status = PcntEventType::from_repr_truncated(status);
                 if status.contains(PcntEvent::HighLimit) {
-                    approx_value.fetch_add(HIGH_LIMIT as i32, Ordering::SeqCst);
+                    approx_value.fetch_add(HIGH_LIMIT as i32, Ordering::Relaxed);
                 }
                 if status.contains(PcntEvent::LowLimit) {
-                    approx_value.fetch_add(LOW_LIMIT as i32, Ordering::SeqCst);
+                    approx_value.fetch_add(LOW_LIMIT as i32, Ordering::Relaxed);
                 }
             }) {
                 return Err(e);
@@ -118,8 +118,8 @@ impl Encoder {
     pub fn get_value(&self) -> Result<(), EspError> {
         match self.unit.get_counter_value() {
             Ok(counter_value) => {
-                let value = self.approx_value.load(Ordering::Relaxed) + counter_value as i32;
-                self.total_ticks.store(value, Ordering::Relaxed);
+                let value = self.approx_value.load(Ordering::SeqCst) + counter_value as i32;
+                self.total_ticks.store(value, Ordering::SeqCst);
                 Ok(())
             }
             Err(e) => Err(e),
@@ -130,15 +130,13 @@ impl Encoder {
     pub fn compute_speed(&mut self) -> Result<f32, EspError> {
         match self.get_value() {
             Ok(_) => {
-                let delta_ticks = (self.total_ticks.load(Ordering::Relaxed)
-                    - self.last_total_ticks.load(Ordering::Relaxed))
-                    / 4;
-
+                let current_ticks = self.total_ticks.load(Ordering::SeqCst);
+                let delta_ticks = (current_ticks
+                    - self.last_total_ticks.load(Ordering::SeqCst))
+                    >> 2;
+                
                 let speed = delta_ticks as f32 * RAD_PER_TICK / TIMER_FREQUENCY_SEC;
-
-                self.last_total_ticks
-                    .store(self.total_ticks.load(Ordering::Relaxed), Ordering::Relaxed);
-
+                self.last_total_ticks.store(current_ticks, Ordering::SeqCst);
                 Ok(speed)
             }
             Err(e) => Err(e),

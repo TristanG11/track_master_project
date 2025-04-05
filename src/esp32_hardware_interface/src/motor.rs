@@ -1,4 +1,4 @@
-use crate::motor_pid::MotorPID;
+use crate::motor_pid::{MotorPID,INTEGRAL_MIN,INTEGRAL_MAX,CONTROL_MIN,CONTROL_MAX};
 use crate::motor_pin::MotorPin;
 use crate::motor_state::{Direction, MotorState, TIMER_FREQUENCY_SEC};
 use esp_idf_hal::gpio::IOPin;
@@ -7,11 +7,6 @@ use esp_idf_hal::ledc::LedcDriver;
 use esp_idf_hal::peripheral::Peripheral;
 use esp_idf_svc::hal::pcnt::Pcnt;
 use esp_idf_sys::EspError;
-
-const INTEGRAL_MIN: f32 = -170.0; // Lower limit for the integral
-const INTEGRAL_MAX: f32 = 170.0; // Upper limit for the integral
-const CONTROL_MIN: f32 = -200.0; // Lower limit for the control signal
-const CONTROL_MAX: f32 = 200.0; // Upper limit for the control signal
 
 use crate::encoder::Encoder;
 
@@ -42,7 +37,7 @@ impl Motor {
         let state = MotorState::new();
 
         // Initialize PID controller with default gains
-        let pid = MotorPID::new(10.0, 5.0, 0.3);
+        let pid = MotorPID::new(10.0, 2.5, 0.3);
         //let pid = MotorPID::new(0.0, 0.0, 0.0);
         // Initialize encoder
         let encoder = Encoder::new(pcnt, encoder_a_pin, encoder_b_pin).unwrap();
@@ -59,10 +54,9 @@ impl Motor {
     /// Computes the PID control signal
     pub fn compute_control(&mut self) -> Result<f32, EspError> {
         // Update current speed from the encoder
-        self.state.speed = match self.encoder.compute_speed() {
-            Ok(speed) => speed,
-            Err(e) => return Err(e),
-        };
+        let speed = self.encoder.compute_speed()?;
+        self.state.speed = speed;
+
 
         // Compute the current position
         self.state.compute_position();
@@ -78,16 +72,16 @@ impl Motor {
         let derivative = (error - self.pid.prev_error) / TIMER_FREQUENCY_SEC;
 
         // Compute the PID control signal
-        let mut control =
+        let control =
             self.pid.kp * error + self.pid.ki * self.pid.integral + self.pid.kd * derivative;
 
         // Constrain the control signal
-        control = control.clamp(CONTROL_MIN, CONTROL_MAX);
+        let constrained_control = control.clamp(CONTROL_MIN, CONTROL_MAX);
 
         // Save the current error for the next computation
         self.pid.prev_error = error;
-
-        Ok(control)
+        //println!("control {}",control);
+        Ok(constrained_control)
     }
 
     /// Sets the command to the motor based on the control signal
@@ -112,24 +106,16 @@ impl Motor {
             _ => {}
         }
         Ok(())
+
     }
 
     /// Sets the direction of the motor
     pub fn set_dir(&mut self, direction: Direction) -> Result<(), EspError> {
-        match direction {
-            Direction::Backward => {
-                // Set direction pin to low for backward motion
-                self.pins.dir_pin.set_low()?;
-            }
-            Direction::Forward => {
-                // Set direction pin to high for forward motion
-                self.pins.dir_pin.set_high()?;
-            }
-            Direction::Stop => {
-                // Set direction pin to low to stop the motor
-                self.pins.dir_pin.set_low()?;
-            }
+        if direction == Direction::Forward {
+            self.pins.dir_pin.set_high()?;
+        } else {
+            self.pins.dir_pin.set_low()?;
         }
         Ok(())
-    }
+}
 }

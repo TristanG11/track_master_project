@@ -1,3 +1,9 @@
+pub const INTEGRAL_MIN: f32 = -170.0; // Lower limit for the integral
+pub const INTEGRAL_MAX: f32 = 170.0; // Upper limit for the integral
+pub const CONTROL_MIN: f32 = -200.0; // Lower limit for the control signal
+pub const CONTROL_MAX: f32 = 200.0; // Upper limit for the control signal
+
+
 pub struct MotorPID {
     pub kp: f32,         // Proportional gain
     pub ki: f32,         // Integral gain
@@ -18,3 +24,4 @@ impl MotorPID {
         }
     }
 }
+ 
