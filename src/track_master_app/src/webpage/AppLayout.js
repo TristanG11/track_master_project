@@ -47,9 +47,11 @@ const AppLayout = () => {
     
 
       {/* PID test window */}
+      {/* 
       <div style={{ marginTop: "30px" }}>
         <MotorPIDTuner />
-      </div>
+      </div> 
+      */}
 
       <div style={{ marginTop: "30px" }}>
         <MotorFeedback />
