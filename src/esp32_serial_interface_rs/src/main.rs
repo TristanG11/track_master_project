@@ -2,6 +2,7 @@ use diagnostic_msgs::msg::{DiagnosticArray, DiagnosticStatus, KeyValue};
 use msg_utils::msg::{
     BatteryStatus, FourMotorsFeedback, FourMotorsPid, FourMotorsStatus, WheelCommands,
 };
+use std::i32;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
@@ -93,6 +94,17 @@ fn main() {
         serial_port
     };
 
+    // Before trying to implement the communication logic, we need to ensure esp32 is alive
+    /*{
+        let mut is_rx_alive = false;
+        while !is_rx_alive {
+            // we send a message and wait for an answer
+            let msg = 0x01;
+            let port = serial_port.unwrap();
+
+        }
+
+    }*/
     let serial_port = Arc::new(Mutex::new(serial_port));
 
     // Sender / receiver for serial_port_writing : 
@@ -103,20 +115,18 @@ fn main() {
     let active_pid_update = Arc::new(AtomicBool::new(false));
 
     // Create a subscriber for the topic /cmd_vel_to_send
-
-
     let _cmd_vel_subscription = node
         .create_subscription::<WheelCommands, _>(
             "/cmd_vel_desired",
             rclrs::QOS_PROFILE_DEFAULT,
             {
-                let serial_port = serial_port.clone();
+                /*let serial_port = serial_port.clone();
                 let buffer_size: u32 = 256; // Buffer size on ESP32
                 let min_free_space: u32 = 64; // Minimum required space before writing
                 let max_buffer_size: u32 = 64; // Maximum allowed send size
                 let diag_tx = diag_tx.clone();
                 let mut last_sending_time: Option<std::time::Instant> = None;
-                let active_pid_update = active_pid_update.clone();
+                let active_pid_update = active_pid_update.clone();*/
                 let tx = tx.clone();
                 move |msg: WheelCommands| {
                     let command = format!(
@@ -126,14 +136,15 @@ fn main() {
                         msg.rear_left_wheel_speed,
                         msg.rear_right_wheel_speed
                     );
-                    if !active_pid_update.load(std::sync::atomic::Ordering::Relaxed){
-                        if let Err(e) = tx.send(command){
+                    if let Err(e) = tx.send(command){
 
-                        }     
-                    } // 12H
+                    }
+                    /*if !active_pid_update.load(std::sync::atomic::Ordering::Relaxed){
+                             
+                    }
                     else {
                         println!("active pid is set to true, we cannot send any command");
-                    }
+                    }*/
                     
                 }
             },
