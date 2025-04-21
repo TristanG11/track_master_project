@@ -21,7 +21,7 @@ use std::time::Duration;
 const QUEUE_LENGTH: usize = 10;
 
 fn main() {
-    println!("<Program started here>");
+    
     esp_idf_sys::link_patches(); // Required for ESP-IDF
     let peripherals = Peripherals::take().unwrap();
 
@@ -108,40 +108,6 @@ fn main() {
         peripherals.pcnt3,
     );
 
-    // Timer setup for PID computation
-    let timer_config = timer::config::Config::new().auto_reload(true);
-    let mut timer = timer::TimerDriver::new(peripherals.timer01, &timer_config).unwrap();
-
-    let mut controller = MotorController::new();
-
-    // Add motors to the controller
-    controller.add_motor(motor_front_left.expect("REASON"));
-    controller.add_motor(motor_front_right.expect("REASON"));
-    controller.add_motor(motor_rear_right.expect("REASON"));//
-    controller.add_motor(motor_rear_left.expect("REASON"));//
-
-    // Setup periodic timer
-    let queue = Arc::new(Queue::new(QUEUE_LENGTH));
-    controller.setup_timer(&mut timer, queue.clone());
-
-    let controller = Arc::new(Mutex::new(controller));
-
-    // Thread for processing motors
-    let motor_processing_thread = {
-        let controller = controller.clone();
-        let queue = queue.clone();
-        std::thread::spawn(move || {
-            while let Some(_) = queue.recv_front(10) {
-                {
-                    if let Ok(mut controller) = controller.try_lock() {
-                        controller.process_motors();
-                    }
-                }
-                std::thread::sleep(Duration::from_millis(5));
-            }
-        })
-    };
-
     // UART configuration
     let mut config = uart::config::Config::default().baudrate(Hertz(115200));
     config.data_bits = DataBits::DataBits8;
@@ -158,8 +124,68 @@ fn main() {
     )
     .unwrap();
 
+    let (mut uart_tx, uart_rx) = uart.into_split();
+
+    // Timer setup for PID computation
+    let timer_config = timer::config::Config::new().auto_reload(true);
+    let mut timer = timer::TimerDriver::new(peripherals.timer01, &timer_config).unwrap();
+
+    let mut controller = MotorController::new();
+
+    // Add motors to the controller
+    if let Err(e) = controller.add_motor(motor_front_left.expect("REASON"))
+    {
+        uart_tx.write(e.as_bytes()).unwrap();
+    }
+
+    if let Err(e) = controller.add_motor(motor_front_right.expect("REASON"))
+    {
+        uart_tx.write(e.as_bytes()).unwrap();
+    }
+
+    if let Err(e) = controller.add_motor(motor_rear_right.expect("REASON"))
+    {
+        uart_tx.write(e.as_bytes()).unwrap();
+    }
+
+    if let Err(e) = controller.add_motor(motor_rear_left.expect("REASON"))
+    {
+        uart_tx.write(e.as_bytes()).unwrap();
+    }
+
+    // Setup periodic timer
+    let queue = Arc::new(Queue::new(QUEUE_LENGTH));
+    controller.setup_timer(&mut timer, queue.clone());
+
+    let controller = Arc::new(Mutex::new(controller));
+
+        
+
+    // Thread for processing motors
+    let motor_processing_thread = {
+        let controller = controller.clone();
+        let queue = queue.clone();
+        std::thread::spawn(move || {
+            while let Some(_) = queue.recv_front(10) {
+                {
+                    if let Ok(mut controller) = controller.lock() {
+                        if let Err(e) = controller.process_motors()
+                        {
+                            uart_tx.write(e.as_bytes()).unwrap();
+                        }
+                        let message = controller.get_feedback();// Send feedback every 40 ms
+                        uart_tx.write(message.as_bytes()).unwrap();
+                    }
+                }
+                std::thread::sleep(Duration::from_millis(5));
+            }
+        })
+    };
+
+
+
     // Thread for UART communication
-    let uart_thread = {
+    /*let uart_thread = {
         let controller = controller.clone();
         std::thread::spawn(move || {
             let mut buffer = [0u8; 256];
@@ -200,12 +226,36 @@ fn main() {
                 std::thread::sleep(std::time::Duration::from_millis(5));
             }
         })
-    };
+    };*/
 
     //uart_thread.join().unwrap();
     //motor_processing_thread.join().unwrap();
     // Main loop
+
+    let mut buffer = [0u8; 512];
     loop {
-        std::thread::sleep(std::time::Duration::from_secs_f32(0.10));
+        //println!("main thread");
+
+        match uart_rx.read(&mut buffer, 2) {
+            Ok(size) => {
+                if size > 0 {
+                    
+                    if let Ok(recv) = std::str::from_utf8(&buffer[..size]) {
+                        let command = recv.trim().to_string();
+                        
+                        
+                        if let Err(e) =  controller.lock().unwrap().handle_command(&command) {
+
+                        }
+                    }
+                }
+            }
+            Err(_) => {
+                // Log UART read error
+            }
+        }
+
+        // Delay to reduce loop frequency
+        std::thread::sleep(std::time::Duration::from_millis(30));
     }
 }

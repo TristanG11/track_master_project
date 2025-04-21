@@ -18,23 +18,13 @@ impl MotorController {
     }
 
     /// Adds a motor to the controller
-    pub fn add_motor(&mut self, motor: Motor) {
+    pub fn add_motor(&mut self, motor: Motor)->Result<(), String> {
         if let Ok(mut motors) = self.motors.lock() {
             motors.insert(motor.name.clone(), motor);
+            Ok(())
         } else {
-            eprintln!("< Warning: Failed to lock mutex in add_motor()>");
+            return Err(String::from("< Warning: Failed to lock mutex in add_motor()>"));
         }
-    }
-
-    /// Changes the PID gains for a specific motor
-    pub fn change_pid_gain(&mut self, name: &String, kp: f32, ki: f32, kd: f32) {
-        let mut motors = self.motors.lock().unwrap();
-        if let Some(motor) = motors.get_mut(name) {
-            motor.pid.kd = kd;
-            motor.pid.kp = kp;
-            motor.pid.ki = ki;
-        }
-        println!("<pid cmd changed: {},{},{}>", kp,kd,ki);
     }
 
     /// Returns feedback from all motors as a formatted string
@@ -50,8 +40,7 @@ impl MotorController {
             feedback.push('>');
             feedback
         } else {
-            //eprintln!("<Warning: Failed to lock mutex in get_feedback()");
-            String::from("<FB=ERROR>")
+            String::from("<F.B=Error>")
         }
     }
 
@@ -75,7 +64,7 @@ impl MotorController {
     /// Handles incoming commands to update motor states
     pub fn handle_command(&mut self, cmd: &String) -> Result<(), String> {
         if !cmd.starts_with('<') || !cmd.ends_with('>') {
-            return Err(String::from("Error: missing < or > in stream"));
+            return Err(String::from("<Error: missing delimiter in stream>"));
         }
         if cmd.contains("CMD"){
             //eprintln!("<we reeeee CMD>");
@@ -86,8 +75,6 @@ impl MotorController {
                     if let Ok(desired_speed) = value.trim().parse::<f32>() {
                         if let Some(motor) = motors.get_mut(name.trim()) {
                             motor.state.set_desired_speed(desired_speed); // Update desired speed
-                            //eprintln!("<we reeeee desired speed>");
-                            //eprintln!("<we reeeee {}>",motor.state.cmd);
                         } else {
                             return Err(format!("<Error: motor '{}' not found>", name));
                         }
@@ -98,64 +85,27 @@ impl MotorController {
                     return Err(format!("<Error: invalid segment '{}'>", segment));
                 }
             }
-        } else if cmd.contains("PID") {
-            let cmd_body = &cmd[5..cmd.len() - 1]; // Remove '<PID=' and '>' from the command
-           // println!("< we received  {} >",cmd_body);
-            for segment in cmd_body.split(';') {
-                if let Some((name, values)) = segment.split_once(':') {
-                    let gains: Vec<&str> = values.split(',').collect();
-                    if gains.len() == 3 {
-                        if let (Ok(kp), Ok(ki), Ok(kd)) = (
-                            gains[0].trim().parse::<f32>(),
-                            gains[1].trim().parse::<f32>(),
-                            gains[2].trim().parse::<f32>(),
-                        ) {
-                            // Appelle la fonction change_pid_gain
-                            //if let Err(e) =
-                                self.change_pid_gain(&name.trim().to_string(), kp, ki, kd);
-                                //println!("<{}>",cmd_body);
-                            /*{
-                                return Err(format!("<Error: {}>", e));
-                            }*/
-                        } else {
-                            eprintln!("<Error : else1 >");
-                            eprintln!(
-                                "<Error: invalid PID values '{}' for motor '{}'>",
-                                values, name
-                            )
-                            /*return Err(format!(
-                                "<Error: invalid PID values '{}' for motor '{}'>",
-                                values, name
-                            ));*/
-                        }
-                    } else {
-                        eprintln!("<Error : else2 >");
-                        eprintln!("<Error: invalid PID format for motor '{}'>", name);
-                        //return Err(format!("<Error: invalid PID format for motor '{}'>", name));
-                    }
-                } else {
-                    eprintln!("<Error : else3 >");
-                    return Err(format!("<Error: invalid segment '{}'>", segment));
-                }
-            }
-        }
-        
-
+        } 
         Ok(())
     }
 
     /// Processes all motors by updating their states and applying commands
-pub fn process_motors(&mut self) {
-    if let Ok(mut motors) = self.motors.try_lock() {
+pub fn process_motors(&mut self)->Result<(),String> {
+    if let Ok(mut motors) = self.motors.lock(){
         for (_, motor) in motors.iter_mut() {
             if let Ok(cmd) = motor.compute_control() {
                 motor.state.cmd = cmd;
+                if let Err(e) = motor.set_cmd() // Apply the command to the motor
+                {
+                    return Err(format!("<Error: Cannot set cmd'{}'>", e));
+                }
             }
-            motor.set_cmd(); // Apply the command to the motor
+            
         }
     } else {
-        //eprintln!("<⚠️ Warning: Failed to lock motors mutex in process_motors()>");
+        return Err(format!("<Warning: Failed to lock motors mutex in process_motors()>"));
     }
+    Ok(())
 }
 
 }
