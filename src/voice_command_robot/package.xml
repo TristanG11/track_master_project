@@ -3,9 +3,9 @@
 <package format="3">
   <name>voice_command_robot</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Control the robot using voice command</description>
   <maintainer email="tristanogandagaguerick@gmail.com">tristan</maintainer>
-  <license>TODO: License declaration</license>
+  <license>MIT</license>
 
   <depend>std_msgs</depend>
   <depend>rclpy</depend>

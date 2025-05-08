@@ -14,10 +14,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='tristan',
+    maintainer='tristan agoumbi',
     maintainer_email='tristanogandagaguerick@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='Publishes the map->odom transform from GNSS data',
+    license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

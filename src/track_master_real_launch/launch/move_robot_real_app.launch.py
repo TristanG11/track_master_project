@@ -3,9 +3,9 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.actions import IncludeLaunchDescription, TimerAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-
+from launch.launch_description_sources import AnyLaunchDescriptionSource
 
 def generate_launch_description():
     pkg_name_ctrl = 'track_master_control'
@@ -22,17 +22,28 @@ def generate_launch_description():
 
     # Inclure le launch du serveur websocket (format XML)
     app_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
+        AnyLaunchDescriptionSource(
             os.path.join(
                 get_package_share_directory(pkg_websocket), 'launch', 'rosbridge_websocket_launch.xml'
             )
         )
     )
 
-    # Ajouter un délai de 5 secondes avant de lancer le websocket
+    # Env var needs to be set
+    # Lancer l'app npm
+    npm_app_path = os.environ.get('NPM_APP_PATH')
+    #npm_app_path = "/home/tristan/ros2_ws/src/robot_project/src/track_master_app"
+    npm_start_process = ExecuteProcess(
+        cmd=["npm", "start"],
+        cwd=npm_app_path,
+        shell=True,
+        output='screen'
+    )
+
+    # Lancer le websocket + npm app après 5s
     delayed_app_launch = TimerAction(
         period=5.0,
-        actions=[app_launch]
+        actions=[app_launch, npm_start_process]
     )
 
     return LaunchDescription([

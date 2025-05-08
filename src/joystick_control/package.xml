@@ -7,8 +7,14 @@
   <maintainer email="tristanogandagaguerick@gmail.com">Tristan Guerick Agoumbi Ogandaga</maintainer>
   <license>BSD</license>
 
-  <depend>geometry_msgs</depend>
+  <!-- ROS 2 dependencies -->
   <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>diagnostic_updater</depend>
+
+  <!-- PyPI (Python) dependencies -->
+  <exec_depend>python3-pygame</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
