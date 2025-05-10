@@ -33,15 +33,15 @@ fn main() {
 
     // Pins setup for all motors
     // Motor: front right
-    let dir_pin_fr = peripherals.pins.gpio5;
+    let dir_pin_fr = peripherals.pins.gpio1;
     let pwm_pin_fr = LedcDriver::new(
         peripherals.ledc.channel0,
         &pwm_timer,
-        peripherals.pins.gpio6,
+        peripherals.pins.gpio2,
     )
     .unwrap();
-    let encoder_a_pin_fr = peripherals.pins.gpio7;
-    let encoder_b_pin_fr = peripherals.pins.gpio8;
+    let encoder_a_pin_fr = peripherals.pins.gpio35;
+    let encoder_b_pin_fr = peripherals.pins.gpio36;
     let motor_front_right = Motor::new(
         String::from("fr"),
         dir_pin_fr,
@@ -50,17 +50,17 @@ fn main() {
         encoder_b_pin_fr,
         peripherals.pcnt0,
     );
-     
+
     // Motor: front left
-    let dir_pin_fl = peripherals.pins.gpio15;
+    let dir_pin_fl = peripherals.pins.gpio4;
     let pwm_pin_fl = LedcDriver::new(
         peripherals.ledc.channel1,
         &pwm_timer,
-        peripherals.pins.gpio16,
+        peripherals.pins.gpio5,
     )
     .unwrap();
-    let encoder_a_pin_fl = peripherals.pins.gpio17;
-    let encoder_b_pin_fl = peripherals.pins.gpio18;
+    let encoder_a_pin_fl = peripherals.pins.gpio6;
+    let encoder_b_pin_fl = peripherals.pins.gpio7;
     let motor_front_left = Motor::new(
         String::from("fl"),
         dir_pin_fl,
@@ -256,6 +256,6 @@ fn main() {
         }
 
         // Delay to reduce loop frequency
-        std::thread::sleep(std::time::Duration::from_millis(30));
+        std::thread::sleep(std::time::Duration::from_millis(20));
     }
 }

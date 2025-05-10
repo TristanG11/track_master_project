@@ -186,30 +186,33 @@ void TrackMasterController::feedbackCallback(const msg_utils::msg::FourMotorsFee
 
   delta_dl_ = dl - prev_dl_;
   delta_dr_ = dr - prev_dr_;
-  
+
   prev_dl_ = dl;
   prev_dr_ = dr;
 
   delta_s_ = (delta_dr_ + delta_dl_) / 2.0;
   delta_theta_ = (delta_dr_ - delta_dl_) / wheel_separation_;
   theta_ += delta_theta_;
-}
 
-void TrackMasterController::publishOdometry()
-{
   odom_msg_.header.stamp = get_clock()->now();
   odom_msg_.header.frame_id = odom_frame_id_;
   odom_msg_.child_frame_id = base_frame_id_;
 
   odom_msg_.twist.twist.linear.x = v_measured_;
   odom_msg_.twist.twist.angular.z = omega_measured_;
-  
+
+
   odom_msg_.pose.pose.position.x += delta_s_ * cos(theta_ + delta_theta_ / 2.0);
   odom_msg_.pose.pose.position.y += delta_s_ * sin(theta_ + delta_theta_ / 2.0);
 
   tf2::Quaternion quat;
   quat.setRPY( 0, 0, theta_ );
   odom_msg_.pose.pose.orientation = tf2::toMsg(quat);
+}
+
+void TrackMasterController::publishOdometry()
+{
+
 
   odom_pub_->publish(odom_msg_);
 

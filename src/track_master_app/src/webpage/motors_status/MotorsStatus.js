@@ -14,16 +14,16 @@ const CarStatus = () => {
   useEffect(() => {
     const motorStatusTopic = new ROSLIB.Topic({
       ros: ros,
-      name: "/motor_status",
-      messageType: "msg_utils/FourMotorsStatus",
+      name: "/cmd_vel_feedback",
+      messageType: "msg_utils/FourMotorsFeedback",
     });
 
     motorStatusTopic.subscribe((message) => {
       setMotorStatus({
         motor_front_left: {
           speed: message.motor_front_left.speed,
-          voltage: message.motor_front_left.voltage,
-          current: message.motor_front_left.current,
+          //voltage: message.motor_front_left.voltage,
+          //current: message.motor_front_left.current,
         },
         motor_front_right: {
           speed: message.motor_front_right.speed,
@@ -32,13 +32,13 @@ const CarStatus = () => {
         },
         motor_rear_left: {
           speed: message.motor_rear_left.speed,
-          voltage: message.motor_rear_left.voltage,
-          current: message.motor_rear_left.current,
+          //voltage: message.motor_rear_left.voltage,
+          //current: message.motor_rear_left.current,
         },
         motor_rear_right: {
           speed: message.motor_rear_right.speed,
-          voltage: message.motor_rear_right.voltage,
-          current: message.motor_rear_right.current,
+          //voltage: message.motor_rear_right.voltage,
+          //current: message.motor_rear_right.current,
         },
       });
     });
