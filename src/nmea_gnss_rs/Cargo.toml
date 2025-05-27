@@ -12,6 +12,9 @@ sensor_msgs ="*"
 nmea-parser = "0.11.0"
 msg_utils ={path = "../../../../install/msg_utils/share/msg_utils/rust/" }
 map_3d = "0.1.5"
+parking_lot = "0.12.3"
+rust_utils = {path = "../rust_utils"}
+diagnostic_msgs = "*"
 
 [[bin]]
 name = "nmea_gnss_node"
