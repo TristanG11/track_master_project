@@ -1,0 +1,9 @@
+[package]
+name = "rust_utils"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serialport = "4.6.1"
+diagnostic_msgs = "*"
+parking_lot = "0.12.3"
