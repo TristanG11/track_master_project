@@ -26,6 +26,17 @@ const AppLayout = () => {
         <BatteryStatus />
       </div>
 
+      <div style={{ marginTop: "30px" }}>
+        <MotorFeedback />
+      </div>
+      {/* PID test window */}
+      {
+      <div style={{ marginTop: "30px" }}>
+        <MotorPIDTuner />
+      </div> 
+      }
+
+
       {/* GNSS and LiDAR below */}
       
       <div style={{
@@ -46,16 +57,9 @@ const AppLayout = () => {
       </div>
     
 
-      {/* PID test window */}
-      {/* 
-      <div style={{ marginTop: "30px" }}>
-        <MotorPIDTuner />
-      </div> 
-      */}
+      
 
-      <div style={{ marginTop: "30px" }}>
-        <MotorFeedback />
-      </div>
+      
     </div>
   );
 };
