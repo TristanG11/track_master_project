@@ -1,5 +1,5 @@
 use crate::motor_state::RAD_PER_TICK;
-use crate::motor_state::TIMER_FREQUENCY_SEC;
+use crate::motor_state::UPDATE_FREQUENCY_SEC;
 use esp_idf_hal::gpio::AnyInputPin;
 use esp_idf_hal::gpio::InputPin;
 use esp_idf_hal::pcnt::*;
@@ -9,8 +9,10 @@ use esp_idf_sys::EspError;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+
 const LOW_LIMIT: i16 = -100;
 const HIGH_LIMIT: i16 = 100;
+
 use std::cmp::min;
 
 pub struct Encoder {
@@ -45,8 +47,8 @@ impl Encoder {
             &PcntChannelConfig {
                 lctrl_mode: PcntControlMode::Reverse,
                 hctrl_mode: PcntControlMode::Keep,
-                pos_mode: PcntCountMode::Decrement,
-                neg_mode: PcntCountMode::Increment,
+                pos_mode: PcntCountMode::Increment,
+                neg_mode: PcntCountMode::Decrement,
                 counter_h_lim: HIGH_LIMIT,
                 counter_l_lim: LOW_LIMIT,
             },
@@ -62,8 +64,8 @@ impl Encoder {
             &PcntChannelConfig {
                 lctrl_mode: PcntControlMode::Reverse,
                 hctrl_mode: PcntControlMode::Keep,
-                pos_mode: PcntCountMode::Increment,
-                neg_mode: PcntCountMode::Decrement,
+                pos_mode: PcntCountMode::Decrement,
+                neg_mode: PcntCountMode::Increment,
                 counter_h_lim: HIGH_LIMIT,
                 counter_l_lim: LOW_LIMIT,
             },
@@ -72,7 +74,7 @@ impl Encoder {
         }
 
         // Set the filter value and enable the filter
-        unit.set_filter_value(min(10 * 80, 1023)) ?;
+        unit.set_filter_value(min(10 * 80, 1023))?;
         unit.filter_enable()?;
 
         let total_ticks = Arc::new(AtomicI32::new(0));
@@ -99,7 +101,7 @@ impl Encoder {
 
         // Enable interrupts for high and low limit events
         unit.event_enable(PcntEvent::HighLimit)?;
-        unit.event_enable(PcntEvent::LowLimit)?; 
+        unit.event_enable(PcntEvent::LowLimit)?;
 
         // Initialize the PCNT unit: pause, clear counter, and resume
         unit.counter_pause()?;
@@ -131,11 +133,10 @@ impl Encoder {
         match self.get_value() {
             Ok(_) => {
                 let current_ticks = self.total_ticks.load(Ordering::SeqCst);
-                let delta_ticks = (current_ticks
-                    - self.last_total_ticks.load(Ordering::SeqCst))
-                    >> 2;
-                
-                let speed = delta_ticks as f32 * RAD_PER_TICK / TIMER_FREQUENCY_SEC;
+                let delta_ticks =
+                    (current_ticks - self.last_total_ticks.load(Ordering::SeqCst)) >> 2;
+
+                let speed = delta_ticks as f32 * RAD_PER_TICK / UPDATE_FREQUENCY_SEC;
                 self.last_total_ticks.store(current_ticks, Ordering::SeqCst);
                 Ok(speed)
             }

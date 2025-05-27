@@ -12,7 +12,7 @@ harness = false # do not use the built in cargo test harness -> resolve rust-ana
 
 [profile.release]
 opt-level = "s"
-incremental = true
+incremental = false
 
 [profile.dev]
 debug = true    # Symbols are nice and they don't increase the size on Flash
@@ -30,6 +30,7 @@ esp-idf-svc = { version = "0.51", features = ["critical-section", "embassy-time-
 embedded-hal = "1.0.0-rc.1"
 esp-idf-hal = "0.45"
 esp-idf-sys = "0.36.0"
+parking_lot = "0.12.3"
 [build-dependencies]
 embuild = { version = "0.32.0", features = ["espidf"] }
 cc = "=1.1.30" # Version "1.1.30" necessary until a new version of `esp-idf-sys` is released
