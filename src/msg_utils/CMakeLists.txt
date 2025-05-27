@@ -24,6 +24,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FourMotorsFeedback.msg"
   "msg/Pid.msg"
   "msg/FourMotorsPid.msg"
+  "msg/RobotPid.msg"
+  "msg/SerialPorts.msg"
   DEPENDENCIES std_msgs 
 )
 ament_export_dependencies(rosidl_default_runtime)
