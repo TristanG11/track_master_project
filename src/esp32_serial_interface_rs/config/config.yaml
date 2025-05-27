@@ -1,0 +1,8 @@
+esp32_serial_interface_rs:
+  ros__parameters:
+    serial_port: "/dev/ttyUSB0"
+    baud_rate: 115200
+    topic_cmd_vel_feedback: "/cmd_vel_feedback"
+    topic_motor_status: "/motor_status"
+    topic_battery_status: "/battery_status"
+    topic_diagnostics: "/diagnostics"

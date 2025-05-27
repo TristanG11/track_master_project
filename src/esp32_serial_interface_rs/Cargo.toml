@@ -8,6 +8,12 @@ rclrs = "0.4.1"
 serialport = "4.6.1"
 msg_utils ={path = "../../../../install/msg_utils/share/msg_utils/rust/" }
 diagnostic_msgs = "*"
+parking_lot = "0.12.3"
+rust_utils = {path = "../rust_utils"}
+
 [[bin]]
 name = "esp32_serial_interface_node"
 path = "src/main.rs"
+
+[package.metadata.ros]
+install_to_share = ["config"]
