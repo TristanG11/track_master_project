@@ -2,8 +2,8 @@ use diagnostic_msgs::msg::{DiagnosticArray, DiagnosticStatus, KeyValue};
 use geometry_msgs::msg::{PoseWithCovarianceStamped, TwistWithCovarianceStamped};
 use map_3d::{geodetic2enu, Ellipsoid::WGS84};
 use msg_utils::msg::GpsVelocityHeading;
-use msg_utils::msg::SerialPorts;
 use nmea_parser::{gnss::GgaQualityIndicator, NmeaParser, ParsedMessage};
+use parking_lot::FairMutex;
 use rclrs::MandatoryParameter;
 use rust_utils::serial::*;
 use sensor_msgs::msg::NavSatFix;
@@ -13,7 +13,6 @@ use std::{
     io::{BufRead, BufReader},
     time::Duration,
 };
-use parking_lot::FairMutex;
 fn main() {
     let context = rclrs::Context::new(std::env::args()).unwrap();
     let node = rclrs::create_node(&context, "nmea_gnss_node_rs").unwrap();
@@ -119,28 +118,15 @@ fn main() {
         });
     };
 
-    let serial_port: Arc<parking_lot::lock_api::Mutex<parking_lot::RawFairMutex, Option<Box<dyn serialport::SerialPort + 'static>>>>= Arc::new(parking_lot::FairMutex::new(None));
+    let serial_port: Arc<
+        parking_lot::lock_api::Mutex<
+            parking_lot::RawFairMutex,
+            Option<Box<dyn serialport::SerialPort + 'static>>,
+        >,
+    > = Arc::new(parking_lot::FairMutex::new(None));
 
-    let port_name: Arc<parking_lot::lock_api::Mutex<parking_lot::RawFairMutex, String>> = Arc::new(FairMutex::new(String::new()));
-
-    let _subscription = node
-        .create_subscription::<SerialPorts, _>(
-            "/available_serial_ports",
-            rclrs::QoSProfile::default(),
-            {
-                let mut last_name = String::new();
-                let port_name = Arc::clone(&port_name);
-                move |msg: SerialPorts| {
-                    if last_name != msg.gnss_port {
-                        if let Some(mut name) = port_name.try_lock_for(Duration::from_millis(100)) {
-                            *name = msg.gnss_port.clone();
-                            last_name = msg.gnss_port.clone();
-                        }
-                    }
-                }
-            },
-        )
-        .unwrap();
+    let port_name: Arc<parking_lot::lock_api::Mutex<parking_lot::RawFairMutex, String>> =
+        Arc::new(FairMutex::new(String::from("/dev/gnss")));
 
     spawn_reconnection_thread(
         serial_port.clone(),
@@ -152,187 +138,153 @@ fn main() {
     );
 
     std::thread::spawn({
-        let lat0 = lat0.get();
-        let alt0 = alt0.get();
-        let lon0 = lon0.get();
+    let lat0_rad = lat0.get().to_radians();
+    let alt0 = alt0.get();
+    let lon0_rad = lon0.get().to_radians();
 
-        let node = node.clone();
-        let mut parser = NmeaParser::new();
-        let serial_port: Arc<parking_lot::lock_api::Mutex<parking_lot::RawFairMutex, Option<Box<dyn serialport::SerialPort + 'static>>>>= serial_port.clone();
-        move || {
-            let disconnected_flag = disconnected_flag.clone();
-            let diag_tx = diag_tx.clone();
+    let node = node.clone();
+    let mut parser = NmeaParser::new();
+    let serial_port = serial_port.clone();
+    move || {
+        let disconnected_flag = disconnected_flag.clone();
+        let diag_tx = diag_tx.clone();
+
+        loop {
+            std::thread::sleep(Duration::from_millis(100)); 
+
+            
+            let port = 
+            {
+                let port_guard = serial_port.lock();
+                match &*port_guard {
+                Some(p) => match p.try_clone() {
+                    Ok(clone) => clone,
+                    Err(e) => {
+                        eprintln!("Failed to clone serial port: {}", e);
+                        continue;
+                    }
+                },
+                None => continue,
+            }
+            };
+
+            let mut reader = BufReader::new(port);
+
             loop {
                 let mut line = String::new();
                 let mut serial_error: Option<std::io::Error> = None;
 
-                if let Some(mut port_lock) = serial_port.try_lock_for(Duration::from_millis(10)) {
-                    if let Some(ref mut port) = *port_lock {
-                        println!("will cre");
-                        let mut reader = BufReader::new(port);
-                        match reader.read_line(&mut line) {
-                            Ok(n) if n > 0 => {
-                                match parser.parse_sentence(&line) {
-                                    Ok(result) => {
-                                        match result {
-                                            ParsedMessage::Gga(gga) => {
-                                                let mut fix_msg: NavSatFix = NavSatFix::default();
+                match reader.read_line(&mut line) {
+                    Ok(n) if n > 0 => {
+                        match parser.parse_sentence(&line) {
+                            Ok(result) => {
+                                match result {
+                                    ParsedMessage::Gga(gga) => {
+                                        let mut fix_msg: NavSatFix = NavSatFix::default();
+                                        println!("gga={:?}", gga);
+                                        let now = node
+                                            .get_clock()
+                                            .now()
+                                            .to_ros_msg()
+                                            .unwrap();
+                                        fix_msg.header.stamp.sec = now.sec;
+                                        fix_msg.header.stamp.nanosec = now.nanosec;
+                                        fix_msg.latitude = gga.latitude.unwrap_or(0.0);
+                                        fix_msg.longitude = gga.longitude.unwrap_or(0.0);
+                                        fix_msg.altitude = gga.altitude.unwrap_or(0.0);
+                                        fix_msg.status.status = match gga.quality {
+                                            GgaQualityIndicator::Invalid => -1,
+                                            GgaQualityIndicator::GpsFix => 0,
+                                            GgaQualityIndicator::DGpsFix => 2,
+                                            _ => -1,
+                                        };
+                                        fix_msg.status.service = 1;
+                                        let hdop = gga.hdop.unwrap_or(1.0);
+                                        fix_msg.position_covariance = [
+                                            hdop, 0.0, 0.0,
+                                            0.0, hdop, 0.0,
+                                            0.0, 0.0, hdop,
+                                        ];
+                                        fix_msg.position_covariance_type =
+                                            sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_APPROXIMATED;
 
-                                                fix_msg.header.stamp.sec = node
-                                                    .get_clock()
-                                                    .now()
-                                                    .to_ros_msg()
-                                                    .unwrap()
-                                                    .sec;
-                                                fix_msg.header.stamp.nanosec = node
-                                                    .get_clock()
-                                                    .now()
-                                                    .to_ros_msg()
-                                                    .unwrap()
-                                                    .nanosec;
-                                                // Convert latitude and longitude
-                                                fix_msg.latitude = gga.latitude.unwrap_or(0.0);
-                                                fix_msg.longitude = gga.longitude.unwrap_or(0.0);
+                                        println!(
+                                            "Publishing NavSatFix: latitude={}, longitude={}, altitude={}",
+                                            fix_msg.latitude, fix_msg.longitude, fix_msg.altitude
+                                        );
 
-                                                // Convert altitude
-                                                fix_msg.altitude = gga.altitude.unwrap_or(0.0);
+                                        let (x, y, z) = geodetic2enu(
+                                            fix_msg.latitude.to_radians(),
+                                            fix_msg.longitude.to_radians(),
+                                            fix_msg.altitude,
+                                            lat0_rad,
+                                            lon0_rad,
+                                            alt0,
+                                            WGS84,
+                                        );
 
-                                                // Fill the status
-                                                fix_msg.status.status = match gga.quality {
-                                                    GgaQualityIndicator::Invalid => -1, // STATUS_NO_FIX
-                                                    GgaQualityIndicator::GpsFix => 0, // STATUS_FIX
-                                                    GgaQualityIndicator::DGpsFix => 2, // STATUS_DGPS_FIX
-                                                    _ => -1, // Default to no fix
-                                                };
-
-                                                // Satellite count as additional diagnostic info
-                                                fix_msg.status.service = 1; // SERVICE_GPS
-
-                                                // Fill position covariance
-                                                fix_msg.position_covariance = [
-                                                    gga.hdop.unwrap_or(1.0),
-                                                    0.0,
-                                                    0.0,
-                                                    0.0,
-                                                    gga.hdop.unwrap_or(1.0),
-                                                    0.0,
-                                                    0.0,
-                                                    0.0,
-                                                    gga.hdop.unwrap_or(1.0),
-                                                ];
-                                                fix_msg.position_covariance_type =
-                                                    sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_APPROXIMATED;
-
-                                                println!(
-                                                    "Publishing NavSatFix: latitude={}, longitude={}, altitude={}",
-                                                    fix_msg.latitude, fix_msg.longitude, fix_msg.altitude
-                                                );
-
-                                                /*if is_first_pose_fetched {
-                                                    // convertir en coordonnées enu la position actuelle
-                                                }*/
-
-                                                // convert to enu
-
-                                                let (x, y, z) = geodetic2enu(
-                                                    fix_msg.latitude.to_radians(),
-                                                    fix_msg.longitude.to_radians(),
-                                                    fix_msg.altitude,
-                                                    lat0,
-                                                    lon0,
-                                                    alt0,
-                                                    WGS84,
-                                                );
-
-                                                pose_msg.header.frame_id =
-                                                    std::string::String::from("map");
-                                                pose_msg.pose.pose.position.x = x;
-                                                pose_msg.pose.pose.position.y = y;
-                                                pose_msg.pose.pose.position.z = z;
-                                                // Publish the message
-                                                gnss_fix_pub.publish(fix_msg).unwrap();
-                                            }
-                                            ParsedMessage::Vtg(vtg) => {
-                                                let mut heading_vel_msg =
-                                                    GpsVelocityHeading::default();
-                                                let mut twist_msg =
-                                                    TwistWithCovarianceStamped::default();
-                                                if vtg.cog_true.is_some()
-                                                    && vtg.sog_kph.is_some()
-                                                    && vtg.cog_magnetic.is_some()
-                                                {
-                                                    heading_vel_msg.valid = true;
-                                                    heading_vel_msg.heading = vtg.cog_true.unwrap(); // Heading en degrés
-                                                    heading_vel_msg.velocity =
-                                                        vtg.sog_kph.unwrap() / 3.6;
-                                                // Conversion de km/h en m/s
-                                                } else {
-                                                    heading_vel_msg.valid = false;
-                                                    heading_vel_msg.heading =
-                                                        vtg.cog_true.unwrap_or(0.0); // Si None, utilise 0.0 par défaut
-                                                    heading_vel_msg.velocity =
-                                                        vtg.sog_kph.unwrap_or(0.0) / 3.6;
-                                                }
-
-                                                twist_msg.header.frame_id =
-                                                    std::string::String::from("map");
-                                                twist_msg.header.stamp.nanosec = node
-                                                    .get_clock()
-                                                    .now()
-                                                    .to_ros_msg()
-                                                    .unwrap()
-                                                    .nanosec;
-                                                twist_msg.header.stamp.sec = node
-                                                    .get_clock()
-                                                    .now()
-                                                    .to_ros_msg()
-                                                    .unwrap()
-                                                    .sec;
-
-                                                twist_msg.twist.twist.linear.x =
-                                                    heading_vel_msg.velocity;
-
-                                                // orientation
-                                                pose_msg.header.stamp.sec =
-                                                    twist_msg.header.stamp.sec;
-                                                pose_msg.header.stamp.nanosec =
-                                                    twist_msg.header.stamp.nanosec;
-
-                                                heading_vel_pub.publish(heading_vel_msg).unwrap();
-                                                twist_pub.publish(twist_msg).unwrap();
-                                                pose_pub.publish(&pose_msg).unwrap();
-                                            }
-                                            _ => {
-                                                println!(
-                                                    "Unrecognized NMEA sentence : {:?}",
-                                                    result
-                                                );
-                                            }
-                                        }
+                                        pose_msg.header.frame_id = "map".to_string();
+                                        pose_msg.pose.pose.position.x = x;
+                                        pose_msg.pose.pose.position.y = y;
+                                        pose_msg.pose.pose.position.z = z;
+                                        gnss_fix_pub.publish(fix_msg).unwrap();
+                                        pose_pub.publish(&pose_msg).unwrap();
                                     }
-                                    Err(e) => {
-                                        eprintln!("Error while parsing NMEA sentence: {}", e);
+                                    ParsedMessage::Vtg(vtg) => {
+                                        let mut heading_vel_msg = GpsVelocityHeading::default();
+                                        let mut twist_msg = TwistWithCovarianceStamped::default();
+                                        if vtg.cog_true.is_some()
+                                            && vtg.sog_kph.is_some()
+                                            && vtg.cog_magnetic.is_some()
+                                        {
+                                            heading_vel_msg.valid = true;
+                                            heading_vel_msg.heading = vtg.cog_true.unwrap();
+                                            heading_vel_msg.velocity = vtg.sog_kph.unwrap() / 3.6;
+                                        } else {
+                                            heading_vel_msg.valid = false;
+                                            heading_vel_msg.heading = vtg.cog_true.unwrap_or(0.0);
+                                            heading_vel_msg.velocity = vtg.sog_kph.unwrap_or(0.0) / 3.6;
+                                        }
+
+                                        twist_msg.header.frame_id = "map".to_string();
+                                        let now = node
+                                            .get_clock()
+                                            .now()
+                                            .to_ros_msg()
+                                            .unwrap();
+                                        twist_msg.header.stamp.sec = now.sec;
+                                        twist_msg.header.stamp.nanosec = now.nanosec;
+                                        twist_msg.twist.twist.linear.x = heading_vel_msg.velocity;
+                                        twist_pub.publish(twist_msg).unwrap();
+                                        heading_vel_pub.publish(heading_vel_msg).unwrap();
+                                    }
+                                    _ => {
+                                        println!("Unrecognized NMEA sentence : {:?}", result);
                                     }
                                 }
                             }
-                            Ok(_) => {
-                                println!("No data, waiting...");
-                            }
                             Err(e) => {
-                                //
-                                eprintln!("Read error: {}", e);
-                                serial_error = Some(e);
-                                //break;
+                                eprintln!("Error while parsing NMEA sentence: {}", e);
                             }
                         }
                     }
+                    Ok(_) => {
+                        println!("No data, waiting...");
+                    }
+                    Err(e) => {
+                        eprintln!("Read error: {}", e);
+                        serial_error = Some(e);
+                    }
                 }
+
                 if let Some(e) = serial_error {
                     handle_serial_error(e.into(), &diag_tx, diag_name, &disconnected_flag);
+                    break;
                 }
             }
         }
-    });
+    }
+});
 
     rclrs::spin(node).unwrap();
 }
