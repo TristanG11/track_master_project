@@ -1,5 +1,5 @@
-pub const INTEGRAL_MIN: f32 = -1000.0; // Lower limit for the integral
-pub const INTEGRAL_MAX: f32 = 1000.0; // Upper limit for the integral
+pub const INTEGRAL_MIN: f32 = -500.0; // Lower limit for the integral
+pub const INTEGRAL_MAX: f32 = 500.0; // Upper limit for the integral
 pub const CONTROL_MIN: f32 = -3000.0; // Lower limit for the control signal
 pub const CONTROL_MAX: f32 = 3000.0; // Upper limit for the control signal
 

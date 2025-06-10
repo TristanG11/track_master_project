@@ -1,5 +1,5 @@
+use crate::motor_state::PID_FREQ_SEC;
 use crate::motor_state::RAD_PER_TICK;
-use crate::motor_state::UPDATE_FREQUENCY_SEC;
 use esp_idf_hal::gpio::AnyInputPin;
 use esp_idf_hal::gpio::InputPin;
 use esp_idf_hal::pcnt::*;
@@ -83,7 +83,6 @@ impl Encoder {
 
         // Unsafe interrupt code to handle overflow and underflow of the encoder
         // Tracks overflow in `approx_value: Arc<AtomicI32>`
-        // This is useful for odometry in a wheeled robot
         unsafe {
             let approx_value = Arc::clone(&approx_value);
             if let Err(e) = unit.subscribe(move |status| {
@@ -136,7 +135,7 @@ impl Encoder {
                 let delta_ticks =
                     (current_ticks - self.last_total_ticks.load(Ordering::SeqCst)) >> 2;
 
-                let speed = delta_ticks as f32 * RAD_PER_TICK / UPDATE_FREQUENCY_SEC;
+                let speed = delta_ticks as f32 * RAD_PER_TICK / PID_FREQ_SEC;
                 self.last_total_ticks.store(current_ticks, Ordering::SeqCst);
                 Ok(speed)
             }

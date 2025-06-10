@@ -1,9 +1,10 @@
+
+
 use esp_idf_hal::gpio::AnyIOPin;
 use esp_idf_hal::ledc::config::TimerConfig;
 use esp_idf_hal::ledc::{LedcDriver, LedcTimerDriver};
 use esp_idf_hal::peripherals::Peripherals;
 use esp_idf_hal::prelude::*;
-//use esp_idf_hal::timer;
 mod encoder;
 mod motor;
 mod motor_controller;
@@ -13,30 +14,13 @@ mod motor_state;
 use esp_idf_hal::uart;
 use motor::Motor;
 use motor_controller::MotorController;
-use motor_state::UPDATE_FREQUENCY_SEC;
+use motor_state::PID_FREQ_SEC;
+use std::sync::{Arc, Mutex};
+
 
 fn main() {
     esp_idf_sys::link_patches(); // Required for ESP-IDF
     let peripherals = Peripherals::take().unwrap();
-
-    // PWM timer configuration  
-    // change this to 255????
-
-    /*
-    motor rr cmd = 1864.1758 , speed = 4.9162326
-motor rl cmd = 1879.9695 , speed = 4.9162326
-motor fl cmd = 1792.6039 , speed = 4.9162326
-motor fr cmd = 1943.561 , speed = 4.9162326
-motor rr cmd = 1864.1758 , speed = 4.9162326
-motor rl cmd = 1879.9695 , speed = 4.9162326
-motor fl cmd = 1792.6039 , speed = 4.9162326
-motor fr cmd = 1979.5634 , speed = 4.8562784
-motor rr cmd = 1864.1758 , speed = 4.9162326
-motor rl cmd = 1879.9695 , speed = 4.9162326
-motor fl cmd = 1792.6039 , speed = 4.9162326
-motor fr cmd = 1943.6329 , speed = 4.9761868
-ajoute le calcule du temps dereponse
-     */
     let timer_config = TimerConfig::new()
         .frequency(15.kHz().into())
         .resolution(esp_idf_hal::ledc::Resolution::Bits12);
@@ -60,8 +44,8 @@ ajoute le calcule du temps dereponse
         encoder_a_pin_fr,
         encoder_b_pin_fr,
         peripherals.pcnt0,
-        300.0,
-        90.0,
+        500.0,
+        0.0,
         0.0,
     );
 
@@ -82,8 +66,8 @@ ajoute le calcule du temps dereponse
         encoder_a_pin_fl,
         encoder_b_pin_fl,
         peripherals.pcnt1,
-        300.0,
-        90.0,
+        500.0,
+        0.0,
         0.0,
     );
 
@@ -104,8 +88,8 @@ ajoute le calcule du temps dereponse
         encoder_a_pin_rl,
         encoder_b_pin_rl,
         peripherals.pcnt2,
-        300.0,
-        90.0,
+        500.0,
+        0.0,
         0.0,
     );
 
@@ -126,22 +110,18 @@ ajoute le calcule du temps dereponse
         encoder_a_pin_rr,
         encoder_b_pin_rr,
         peripherals.pcnt3,
-        300.0,
-        90.0,
+        500.0,
+        0.0,
         0.0,
     );
 
-    // UART configuration
-    /*let mut config = uart::config::Config::default().baudrate(Hertz(115200));
-    config.data_bits = DataBits::DataBits8;
-    config.rx_fifo_size = 528 as usize;
-    config.event_config.rx_fifo_full = Some(10);*/
-
     let config = uart::config::Config::default()
-        .baudrate(Hertz(115200))
+        .baudrate(Hertz(230400))
         .data_bits(uart::config::DataBits::DataBits8)
         .parity_none()
-        .stop_bits(uart::config::StopBits::STOP1);
+        .stop_bits(uart::config::StopBits::STOP1)
+        .rx_fifo_size(512)
+        .tx_fifo_size(512);
 
     let uart = uart::UartDriver::new(
         peripherals.uart0,
@@ -178,61 +158,69 @@ ajoute le calcule du temps dereponse
         uart_tx.write(e.as_bytes()).unwrap();
     }
 
-    // Setup periodic timer
-    //let queue = Arc::new(Queue::new(QUEUE_LENGTH));
-    //controller.setup_timer(&mut timer, queue.clone());
-
-    //let controller = Arc::new(FairMutex::new(controller));
-
-    //let uart_tx = Arc::new(Mutex::new(uart_tx));
-
-    let (cmd_tx, cmd_rx) = std::sync::mpsc::channel::<String>();
-    let (feedback_tx, feedback_rx) = std::sync::mpsc::channel::<String>();
+    let controller = Arc::new(Mutex::new(controller));
 
     // Thread for processing motors
     {
-        let mut count = 0;
-        let mut updated =false;
         //let uart_tx = uart_tx.clone();
         // let queue = queue.clone();
+        let controller = controller.clone();
         std::thread::Builder::new()
-            .name("motor_processing".into())
+            .name("command_handler".into())
             .stack_size(16384)
             .spawn(move || {
-                let period = std::time::Duration::from_millis((UPDATE_FREQUENCY_SEC * 1000.0) as u64);
-                let mut next_tick = std::time::Instant::now();
-                let mut last_feedback_time: Option<std::time::Instant> = None;
-                let mut message = String::with_capacity(128);
+                let mut buffer = [0u8; 128];
+                //let mut now = std::time::Instant::now();
                 loop {
-                    let _ = controller.process_motors();
-                    count +=1;
-                    if count > 100 
-                    {
-                        for (_,motor) in controller.motors.iter_mut()
-                        {
-                            motor.state.set_desired_speed(8.5);
+                    match uart_rx.read(&mut buffer, 40) {
+                        Ok(size) if size > 0 => {
+                            if let Ok(recv) = std::str::from_utf8(&buffer[..size]) {
+                                let command = recv.trim().to_string();
+                                if let Ok(mut controller) = controller.lock() {
+                                    //println!("<Lock acquired in recv>");
+                                    let _ = controller.handle_command(&command);
+                                    //println!("{}", command);
+                                }
+                            }
                         }
+                        _ => {}
                     }
-                    // Mesurer le temps entre deux feedbacks
+                }
+            })
+            .unwrap();
+    };
+
+    {
+        let mut last_feedback_time: Option<std::time::Instant> = None;
+        let mut message = String::with_capacity(128);
+        let controller = controller.clone();
+        let period = std::time::Duration::from_millis(50);
+        let mut next_tick = std::time::Instant::now();
+        std::thread::Builder::new()
+            .name("feedback".into())
+            .stack_size(16384)
+            .spawn(move || {
+                loop {
+                    message.clear();
                     let now = std::time::Instant::now();
-                    
+
                     // Générer et envoyer le message
-                    controller.get_feedback(&mut message);
-                    if let Some(last) = last_feedback_time {
-                        let elapsed = now.duration_since(last);
-                        message.push_str(&format!("ts={};>", elapsed.as_millis()));
-                    }else{
-                        message.push_str(&format!("ts={};", 0.0));
-                    }
-                    last_feedback_time = Some(now);
-                    let _ = feedback_tx.send(message.clone());
+                    if let Ok(controller) = controller.lock() {
+                        controller.get_feedback(&mut message);
+                        if let Some(last) = last_feedback_time {
+                            let elapsed = now.duration_since(last).as_millis();
+                            if elapsed >= 45 {
+                                message.push_str(&format!("ts={};>", elapsed));
+                                last_feedback_time = Some(now);
+                            }
+                        } else {
+                            message.push_str(&format!("ts={};", 0.0));
+                            last_feedback_time = Some(now);
 
-                    // Commandes entrantes UART
-                    if let Ok(cmd) = cmd_rx.try_recv() {
-                        let _ = controller.handle_command(&cmd);
-                    }
+                        }
+                        let _ = uart_tx.write(message.as_bytes());
+                    };
 
-                    // Cadencer à 20 Hz
                     next_tick += period;
                     let now = std::time::Instant::now();
                     if next_tick > now {
@@ -243,31 +231,22 @@ ajoute le calcule du temps dereponse
                 }
             })
             .unwrap();
-    };
+    }
 
-    // THREAD TX UART : écrit les feedbacks
-    std::thread::Builder::new()
-        .name("uart writer".into())
-        .stack_size(16384)
-        .spawn(move || loop {
-            if let Ok(msg) = feedback_rx.recv() {
-             //   let _ = uart_tx.write(msg.as_bytes());
-            }
-            //std::thread::sleep(Duration::from_millis(5));
-        })
-        .unwrap();
+    let period = std::time::Duration::from_millis((PID_FREQ_SEC * 1000.0) as u64);
+    let mut next_tick = std::time::Instant::now();
 
-    let mut buffer = [0u8; 512];
     loop {
-        match uart_rx.read(&mut buffer, 10) {
-            Ok(size) if size > 0 => {
-                if let Ok(recv) = std::str::from_utf8(&buffer[..size]) {
-                    let command = recv.trim().to_string();
-                    let _ = cmd_tx.send(command);
-                }
-            }
-            _ => {}
+        if let Ok(mut controller) = controller.lock() {
+            let _ = controller.process_motors();
         }
-        //std::thread::sleep(Duration::from_millis(10));
+        // Cadencer à 20 Hz
+        next_tick += period;
+        let now = std::time::Instant::now();
+        if next_tick > now {
+            std::thread::sleep(next_tick - now);
+        } else {
+            next_tick = now;
+        }
     }
 }

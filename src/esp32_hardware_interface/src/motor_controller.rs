@@ -15,26 +15,24 @@ impl MotorController {
 
     /// Adds a motor to the controller
     pub fn add_motor(&mut self, motor: Motor) -> Result<(), String> {
-            self.motors.insert(motor.name.clone(), motor);
-            Ok(())
+        self.motors.insert(motor.name.clone(), motor);
+        Ok(())
     }
 
     /// Returns feedback from all motors as a formatted string
     /// Remplit `feedback_out` avec les vitesses formatées de tous les moteurs
     pub fn get_feedback(&self, feedback_out: &mut String) {
         feedback_out.clear(); // vider l'ancien contenu
-            feedback_out.push_str("<FB=");
-            for (name, motor) in self.motors.iter() {
-                feedback_out.push_str(&format!(
-                    "{},{:.2};",
-                    name,
-                    motor.state.speed
-                ));
-            }
-            // Pas de push final ici, le caller peut ajouter `>` ou d'autres champs comme `ts=...`
-
+        feedback_out.push_str("<FB=");
+        for (name, motor) in self.motors.iter() {
+            feedback_out.push_str(&format!(
+                "{},{:.2};",
+                name,
+                motor.state.speed,
+                //motor.state.speed
+            ));
+        }
     }
-
 
     /// Sets up a timer for periodic tasks
     /*pub fn setup_timer(&mut self, timer: &mut TimerDriver, tx: Arc<Queue<bool>>) {
@@ -63,34 +61,32 @@ impl MotorController {
         if cmd.contains("CMD") {
             //eprintln!("<we reeeee CMD>");
             let cmd_body = &cmd[5..cmd.len() - 1]; // Remove '<' and '>' from the command
-                for segment in cmd_body.split(';') {
-                    if let Some((name, value)) = segment.split_once(':') {
-                        if let Ok(desired_speed) = value.trim().parse::<f32>() {
-                            let name = name.trim();
-                            // Liste des moteurs à affecter
-                            let target_motors: Vec<&str> = match name {
-                                "fl" | "fr" => vec!["fl", "fr"],
-                                "rl" | "rr" => vec!["rl", "rr"],
-                                _ => vec![name],
-                            };
+            for segment in cmd_body.split(';') {
+                if let Some((name, value)) = segment.split_once(':') {
+                    if let Ok(desired_speed) = value.trim().parse::<f32>() {
+                        let name = name.trim();
+                        // Liste des moteurs à affecter
+                        let target_motors: Vec<&str> = match name {
+                            "fl" | "rl" => vec!["fl", "rl"],
+                            "fr" | "rr" => vec!["fr", "rr"],
+                            _ => vec![name],
+                        };
 
-                            for motor_name in target_motors {
-                                if let Some(motor) = self.motors.get_mut(motor_name) {
-                                    motor.state.set_desired_speed(desired_speed);
-                                } else {
-                                    return Err(format!(
-                                        "<Error: motor '{}' not found>",
-                                        motor_name
-                                    ));
-                                }
+                        for motor_name in target_motors {
+                            if let Some(motor) = self.motors.get_mut(motor_name) {
+                                motor.state.set_desired_speed(desired_speed);
+                            } else {
+                                return Err(format!("<Error: motor '{}' not found>", motor_name));
                             }
-                        } else {
-                            return Err(format!("<Error: invalid speed value '{}'>", value));
                         }
+                        // self.process_motors()?;
                     } else {
-                        return Err(format!("<Error: invalid segment '{}'>", segment));
+                        return Err(format!("<Error: invalid speed value '{}'>", value));
                     }
+                } else {
+                    return Err(format!("<Error: invalid segment '{}'>", segment));
                 }
+            }
         } else if cmd.contains("PID") {
             let cmd_body = &cmd[5..cmd.len() - 1]; // Remove '<PID=' and '>' from the command
             println!("<{}>", cmd_body);
@@ -133,30 +129,29 @@ impl MotorController {
         ki: f32,
         kd: f32,
     ) -> Result<(), String> {
-            if let Some(motor) = self.motors.get_mut(name) {
-                motor.pid.kp = kp;
-                motor.pid.ki = ki;
-                motor.pid.kd = kd;
-                Ok(())
-            } else {
-                Err(format!("<Motor '{}' not found>", name))
-            }
+        if let Some(motor) = self.motors.get_mut(name) {
+            motor.pid.kp = kp;
+            motor.pid.ki = ki;
+            motor.pid.kd = kd;
+            Ok(())
+        } else {
+            Err(format!("<Motor '{}' not found>", name))
+        }
     }
 
     /// Processes all motors by updating their states and applying commands
     pub fn process_motors(&mut self) -> Result<(), String> {
-            for (name, motor) in self.motors.iter_mut() {
-                if let Ok(cmd) = motor.compute_control() {
-                    motor.state.cmd = cmd;
-                    println!("motor {} cmd = {} , speed = {}",name,cmd,motor.state.speed);
-                    
-                    if let Err(e) = motor.set_cmd()
-                    // Apply the command to the motor
-                    {
-                        return Err(format!("<Error: Cannot set cmd'{}'>", e));
-                    }
+        for (_, motor) in self.motors.iter_mut() {
+            if let Ok(cmd) = motor.compute_control() {
+                motor.state.cmd = cmd;
+
+                if let Err(e) = motor.set_cmd()
+                // Apply the command to the motor
+                {
+                    return Err(format!("<Error: Cannot set cmd'{}'>", e));
                 }
             }
+        }
         Ok(())
     }
 }

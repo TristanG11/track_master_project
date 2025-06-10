@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
-// Timer frequency in seconds (50 ms)
-pub const UPDATE_FREQUENCY_SEC: f32 = 0.050;
+// Timer frequency in seconds (25 ms)
+pub const PID_FREQ_SEC: f32 = 0.025;
 // Radians per encoder tick (assuming 2096 ticks per revolution)
 pub const RAD_PER_TICK: f32 = 2.0 * PI / 2096.0;
 

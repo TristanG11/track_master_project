@@ -1,6 +1,6 @@
 use crate::motor_pid::{MotorPID, CONTROL_MAX, CONTROL_MIN, INTEGRAL_MAX, INTEGRAL_MIN};
 use crate::motor_pin::MotorPin;
-use crate::motor_state::{Direction, MotorState, UPDATE_FREQUENCY_SEC, CMD_THRESHOLD};
+use crate::motor_state::{Direction, MotorState, CMD_THRESHOLD, PID_FREQ_SEC};
 use esp_idf_hal::gpio::IOPin;
 use esp_idf_hal::gpio::InputPin;
 use esp_idf_hal::ledc::LedcDriver;
@@ -74,12 +74,16 @@ impl Motor {
         }
 
         // Calculate the derivative term
-        let derivative = (error - self.pid.prev_error) / UPDATE_FREQUENCY_SEC;
+        let derivative = (error - self.pid.prev_error) / PID_FREQ_SEC;
 
-        // Prepare integral update
-        self.pid.integral = self.pid.integral + error * UPDATE_FREQUENCY_SEC;
-        self.pid.integral = self.pid.integral.clamp(INTEGRAL_MIN, INTEGRAL_MAX);
-        
+        // Update integral only if desired speed is not zero (or above small threshold)
+        if self.state.desired_speed.abs() > DEADBAND {
+            self.pid.integral += error * PID_FREQ_SEC;
+            self.pid.integral = self.pid.integral.clamp(INTEGRAL_MIN, INTEGRAL_MAX);
+        } else {
+            // Optionnel : on peut aussi vider l'intégrale
+            self.pid.integral = 0.0;
+        }
         // Calculate the unclamped control signal
         let control_unclamped =
             self.pid.kp * error + self.pid.ki * self.pid.integral + self.pid.kd * derivative;
@@ -116,6 +120,6 @@ impl Motor {
             Direction::Forward => self.pins.dir_pin.set_high()?,
             Direction::Backward | Direction::Stop => self.pins.dir_pin.set_low()?,
         }
-    Ok(())
-}
+        Ok(())
+    }
 }
