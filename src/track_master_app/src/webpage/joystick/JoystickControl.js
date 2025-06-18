@@ -11,9 +11,9 @@ const JoystickControl = () => {
 
   // Conversion parameters
   const maxLinearSpeed = 0.5;
-  const minLinearSpeed = -0.3;
-  const maxAngularSpeed = 0.5;
-  const minAngularSpeed = -0.5;
+  const minLinearSpeed = -0.5;
+  const maxAngularSpeed = 2.0;
+  const minAngularSpeed = -2.0;
   const maxJoy = 1.0; // Maximum scale of joystick input
   const deadzoneThreshold = 0.05; // Deadzone value (here 0)
 

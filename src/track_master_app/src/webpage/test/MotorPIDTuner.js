@@ -65,9 +65,9 @@ const MotorPIDTuner = () => {
         {motors.map((motor) => (
           <div key={motor} style={{ margin: "0 20px" }}>
             <h3>{motor.toUpperCase()}</h3>
-            {renderSlider("Kp", motor, 0, 500, 1, kp, setKp)}
-            {renderSlider("Ki", motor, 0, 100, 1, ki, setKi)}
-            {renderSlider("Kd", motor, 0, 100, 1, kd, setKd)}
+            {renderSlider("Kp", motor, 0, 1500, 0.5, kp, setKp)}
+            {renderSlider("Ki", motor, 0, 120, 0.05, ki, setKi)}
+            {renderSlider("Kd", motor, 0, 20, 0.05, kd, setKd)}
           </div>
         ))}
       </div>
