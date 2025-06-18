@@ -76,7 +76,7 @@ pub fn spawn_reconnection_thread(
             std::thread::sleep(Duration::from_secs(2)); // cadence régulière
 
             if !disconnected_flag.load(Ordering::SeqCst) {
-                println!("next");
+                //println!("next");
                 continue;
             }
 
