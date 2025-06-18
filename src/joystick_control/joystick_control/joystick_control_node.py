@@ -101,7 +101,7 @@ class JoystickControlNode(Node):
                 if self.joystick_connected:
                     self.last_disconnection_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                 self.joystick_connected = False
-                self.get_logger().warn("No joystick detected. Waiting for connection...")
+                #self.get_logger().warn("No joystick detected. Waiting for connection...")
                 time.sleep(2)
             self.updater.update()
 
