@@ -9,6 +9,7 @@
   <!-- Include the GNSS sensor -->
   <xacro:include filename="$(find track_master)/urdf/gnss_sensor.xacro" />
 
+  <xacro:include filename="$(find track_master)/urdf/c1_lidar.xacro" />
   <!-- Include the IMU sensor -->
   <xacro:include filename="$(find track_master)/urdf/imu_sensor.xacro" />
 

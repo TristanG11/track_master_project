@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 project(track_master_controller)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -22,8 +22,7 @@ add_executable(track_master_controller_node
   src/track_master_controller_node.cpp
   src/track_master_controller.cpp
 )
-
-target_compile_features(track_master_controller_node PUBLIC c_std_99 cxx_std_17)
+target_compile_features(track_master_controller_node PUBLIC cxx_std_17)
 
 ament_target_dependencies(track_master_controller_node
   rclcpp
@@ -46,6 +45,9 @@ install(DIRECTORY include/
   DESTINATION include
 )
 
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
 # === Tests ===
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

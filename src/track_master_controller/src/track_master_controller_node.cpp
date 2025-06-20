@@ -5,8 +5,7 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-
-
+#include <algorithm>
 
 /// Ramp between current and target by at most a_max * dt
 double ramp(double &current, double &target, double &a_max, double dt) {
@@ -16,6 +15,10 @@ double ramp(double &current, double &target, double &a_max, double dt) {
     if (diff < -max_step) return current - max_step;
     return target;
   }
+
+double smooth(double current, double target, double alpha) {
+    return current + alpha * (target - current);
+}
 
 namespace track_master_controller
 {
@@ -38,6 +41,10 @@ TrackMasterController::TrackMasterController(const rclcpp::NodeOptions & options
     feedback_topic_, 10,
     std::bind(&TrackMasterController::feedbackCallback, this, std::placeholders::_1));
 
+  robot_pid_sub_ = create_subscription<msg_utils::msg::RobotPid>(
+    robot_pid_topic_,10,
+    std::bind(&TrackMasterController::robotPidCallback, this, std::placeholders::_1));
+
   // publishers
   wheel_cmd_pub_ = create_publisher<msg_utils::msg::WheelCommands>(wheel_cmd_topic_, 10);
   joint_state_pub_ = create_publisher<sensor_msgs::msg::JointState>(joint_state_topic_, 10);
@@ -53,7 +60,7 @@ TrackMasterController::TrackMasterController(const rclcpp::NodeOptions & options
     std::bind(&TrackMasterController::publishJointStates, this));
 
   pid_timer_ = this->create_wall_timer(
-  std::chrono::milliseconds(20),  // 50 Hz
+  std::chrono::milliseconds(static_cast<int>(1000.0 / update_rate_)),  // 20 Hz
   std::bind(&TrackMasterController::pidControlCallback, this)
   );
 
@@ -78,7 +85,7 @@ bool TrackMasterController::initParams()
   declare_parameter<double>("publish_rate", 50.0);
   declare_parameter<std::string>("odom_frame_id", "odom");
   declare_parameter<std::string>("base_frame_id", "base_footprint");
-  declare_parameter<double>("wheel_separation", 0.36);
+  declare_parameter<double>("wheel_separation", 0.347);
   declare_parameter<double>("wheel_radius", 0.06);
 
   declare_parameter<std::vector<std::string>>("left_wheel_names", {"front_left_wheel_joint", "rear_left_wheel_joint"});
@@ -89,11 +96,12 @@ bool TrackMasterController::initParams()
   declare_parameter<std::string>("feedback_topic", "/cmd_vel_feedback");
   declare_parameter<std::string>("odom_topic", "/odom");
   declare_parameter<std::string>("joint_state_topic", "/joint_states");
+  declare_parameter<std::string>("robot_pid_topic","/robot_pid");
 
   // Déclaration des limites maximales
-  declare_parameter<double>("max_linear_velocity", 1.0);
+  declare_parameter<double>("max_linear_velocity", 0.5);
   declare_parameter<double>("max_linear_acceleration", 1.0); 
-  declare_parameter<double>("max_angular_velocity", 1.0); 
+  declare_parameter<double>("max_angular_velocity", 5.0); 
   declare_parameter<double>("max_angular_acceleration", 1.0);  
 
   // Déclaration des limites minimales
@@ -126,7 +134,7 @@ bool TrackMasterController::initParams()
   feedback_topic_ = get_parameter("feedback_topic").as_string();
   odom_topic_ = get_parameter("odom_topic").as_string();
   joint_state_topic_ = get_parameter("joint_state_topic").as_string();
-
+  robot_pid_topic_ = get_parameter("robot_pid_topic").as_string();
   // Récupération des limites maximales
   max_linear_velocity_ = get_parameter("max_linear_velocity").as_double();
   max_linear_acceleration_ = get_parameter("max_linear_acceleration").as_double();
@@ -158,7 +166,7 @@ void TrackMasterController::cmdVelCallback(const geometry_msgs::msg::Twist::Shar
   vel_linear_desired_  = msg->linear.x;
   vel_angular_desired_ = msg->angular.z; 
 
-  const double dt = 1.0 / 100;
+  const double dt = 1.0 / 50.0;
 
   v_est_     = ramp(v_est_,     vel_linear_desired_,  max_linear_acceleration_,  dt);
   omega_est_ = ramp(omega_est_, vel_angular_desired_, max_angular_acceleration_, dt);
@@ -166,8 +174,8 @@ void TrackMasterController::cmdVelCallback(const geometry_msgs::msg::Twist::Shar
   v_est_     = std::clamp(v_est_,     min_linear_velocity_,  max_linear_velocity_);
   omega_est_ = std::clamp(omega_est_, min_angular_velocity_, max_angular_velocity_);
 
-  vl_desired_ = v_est_ - omega_est_ * wheel_separation_ / 2.0;
-  vr_desired_ = v_est_ + omega_est_ * wheel_separation_ / 2.0;
+  vl_desired_ = v_est_ - omega_est_ * wheel_separation_ / 2.0; // m/s
+  vr_desired_ = v_est_ + omega_est_ * wheel_separation_ / 2.0;  // m/S
 }
 
 void TrackMasterController::feedbackCallback(const msg_utils::msg::FourMotorsFeedback::SharedPtr msg)
@@ -175,8 +183,8 @@ void TrackMasterController::feedbackCallback(const msg_utils::msg::FourMotorsFee
   last_feedback_ = *msg;
 
   // Compute velocity 
-  vl_measured_ = (last_feedback_.motor_front_left.speed + last_feedback_.motor_rear_left.speed) / 2.0 * wheel_radius_;
-  vr_measured_ = (last_feedback_.motor_front_right.speed + last_feedback_.motor_rear_right.speed) / 2.0 * wheel_radius_;
+  vl_measured_ = (last_feedback_.motor_front_left.speed + last_feedback_.motor_rear_left.speed) / 2.0 * wheel_radius_; // m/s
+  vr_measured_ = (last_feedback_.motor_front_right.speed + last_feedback_.motor_rear_right.speed) / 2.0 * wheel_radius_;// m/s
   v_measured_ = (vl_measured_ + vr_measured_) / 2.0;
   omega_measured_ = (vr_measured_ - vl_measured_) / wheel_separation_;
 
@@ -215,7 +223,6 @@ void TrackMasterController::publishOdometry()
 
 
   odom_pub_->publish(odom_msg_);
-
 
   // Publish TF
   odom_tf_.header.stamp = this->get_clock()->now();
@@ -259,14 +266,25 @@ void TrackMasterController::publishWheelCommands()
 {
 
   msg_utils::msg::WheelCommands cmd;
-  cmd.front_left_wheel_speed = vl_corrected_;
-  cmd.rear_left_wheel_speed = vl_corrected_;
-  cmd.front_right_wheel_speed = vr_corrected_;
-  cmd.rear_right_wheel_speed = vr_corrected_;
+  cmd.front_left_wheel_speed = wl_desired_;
+  cmd.rear_left_wheel_speed = wl_desired_;
+  cmd.front_right_wheel_speed = wr_desired_;
+  cmd.rear_right_wheel_speed = wr_desired_;
 
   wheel_cmd_pub_->publish(cmd);
 }
 
+void TrackMasterController::robotPidCallback(const msg_utils::msg::RobotPid::SharedPtr msg)
+{
+  pid_left_.kp_ = msg->pid_left.kp;
+  pid_left_.ki_ = msg->pid_left.ki;
+  pid_left_.kd_ = msg->pid_left.kd;
+
+  pid_right_.kp_ = msg->pid_right.kp;
+  pid_right_.ki_ = msg->pid_right.ki;
+  pid_right_.kd_ = msg->pid_right.kd;
+
+}
 void TrackMasterController::pidControlCallback()
 {
   rclcpp::Time now = this->now();
@@ -274,34 +292,18 @@ void TrackMasterController::pidControlCallback()
   if (dt <= 0.0) return;
   last_time_ = now;
   
-
-  //
-
-  // calcul des vitesses de roues via cinématique inverse
-  vl_desired_ = (2 * v_est_ + omega_est_ * wheel_separation_) / (2 * wheel_radius_);
-  vr_desired_ = (2 * v_est_ - omega_est_ * wheel_separation_) / (2 * wheel_radius_);
   // Calcul des erreurs
 
   double error_left = vl_desired_ - vl_measured_;
   double error_right = vr_desired_ - vr_measured_;
 
-  // Commandes PID
-  vl_corrected_ = pid_left_.compute(error_left, dt);
-  vr_corrected_ = pid_right_.compute(error_right, dt);
+  // Commandes PID => calcul des vitesses angulaires pour chaque moteur
+  vl_corrected_ = vl_desired_;//pid_left_.compute(error_left, dt);
+  vr_corrected_ = vr_desired_;//pid_right_.compute(error_right, dt);
 
-  // Publication
-
-  //wheel_cmd_pub_->publish(cmd_msg);
+  wl_desired_ = vl_corrected_ / wheel_radius_;
+  wr_desired_ = vr_corrected_ / wheel_radius_;
 
 }
 
 } // namespace track_master_controller
-
-/// Ramp between current and target by at most a_max * dt
-double ramp(double &current, double &target, double &a_max, double &dt) {
-    double diff = target - current;
-    double max_step = a_max * dt;
-    if (diff >  max_step) return current + max_step;
-    if (diff < -max_step) return current - max_step;
-    return target;
-}

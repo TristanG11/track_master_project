@@ -1,7 +1,6 @@
 track_master_controller:
   ros__parameters:
-    update_rate: 25
-
+    update_rate: 20.0
     publish_rate: 50.0  
     odom_frame_id: odom
     base_frame_id: base_footprint
@@ -10,38 +9,37 @@ track_master_controller:
     pose_covariance_diagonal: [0.01, 0.01, 0.001, 0.001, 0.001, 0.1]
     twist_covariance_diagonal: [0.01, 0.01, 0.001, 0.001, 0.001, 0.1]
 
-    wheel_separation: 0.36
+    wheel_separation: 0.347
     wheel_radius: 0.06
 
     left_wheel_names: ["front_left_wheel_joint", "rear_left_wheel_joint"]
     right_wheel_names: ["front_right_wheel_joint", "rear_right_wheel_joint"]
 
-    #cmd_vel_timeout: 1.0
-    #use_stamped_vel: false
-
-    cmd_vel_topic: /cmd_vel_desired
+    cmd_vel_topic: /diff_drive_controller/cmd_vel_unstamped
+    wheel_cmd_topic: /cmd_vel_desired
     feedback_topic: /cmd_vel_feedback
     odom_topic: /odom
     joint_state_topic: /joint_states
+    robot_pid_topic: /robot_pid
 
     max_linear_velocity: 0.55
     max_linear_acceleration: 0.3
-    max_angular_velocity: 0.5
-    max_angular_acceleration: 0.15
+    max_angular_velocity: 5.0
+    max_angular_acceleration: 0.5
 
     min_linear_velocity: -0.55
     min_linear_acceleration: -0.3
-    min_angular_velocity: -0.5
-    min_angular_acceleration: -0.15
+    min_angular_velocity: -5.0
+    min_angular_acceleration: -0.5
 
     # PID global gauche
     pid_left:
-      kp: 1.0
+      kp: 0.8
       ki: 0.0
-      kd: 0.1
+      kd: 0.0
 
     # PID global droite
     pid_right:
-      kp: 1.0
+      kp: 0.8
       ki: 0.0
-      kd: 0.1
+      kd: 0.0

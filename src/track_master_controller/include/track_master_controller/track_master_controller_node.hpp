@@ -9,18 +9,16 @@
 #include "msg_utils/msg/four_motors_feedback.hpp"
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/msg/transform_stamped.hpp>
-
+#include "msg_utils/msg/robot_pid.hpp"
 #include <string>
 #include <vector>
-
-
-#include <algorithm>  // pour std::clamp
+#include <algorithm>
 
 struct PID {
   double kp_, ki_, kd_;
   double prev_error_ = 0.0;
   double integral_ = 0.0;
-  double max_integral_ = 3.5;
+  double max_integral_ = 5.0;
 
   double compute(double error, double dt) {
     // Intégration avec anti-windup
@@ -34,6 +32,7 @@ struct PID {
     // Sortie PID
     return kp_ * error + ki_ * integral_ + kd_ * derivative;
   }
+
 };
 
 
@@ -50,7 +49,8 @@ public:
 private:
   void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
   void feedbackCallback(const msg_utils::msg::FourMotorsFeedback::SharedPtr msg);
-
+  void robotPidCallback(const msg_utils::msg::RobotPid::SharedPtr msg);
+  
   // Timer callbacks
   void publishOdometry();
   void publishJointStates();
@@ -73,6 +73,7 @@ private:
   std::string wheel_cmd_topic_;
   std::string odom_topic_;
   std::string joint_state_topic_;
+  std::string robot_pid_topic_;
 
   std::vector<double> pose_covariance_diagonal_;
   std::vector<double> twist_covariance_diagonal_;
@@ -92,7 +93,7 @@ private:
   // Subscribers
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   rclcpp::Subscription<msg_utils::msg::FourMotorsFeedback>::SharedPtr feedback_sub_;
-
+  rclcpp::Subscription<msg_utils::msg::RobotPid>::SharedPtr robot_pid_sub_;
   // Publishers
   rclcpp::Publisher<msg_utils::msg::WheelCommands>::SharedPtr wheel_cmd_pub_;
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
@@ -131,7 +132,8 @@ private:
   double delta_s_ = 0.0;
   double delta_theta_ = 0.0;
   double theta_ = 0.0;
-
+  double wl_desired_ = 0.0;
+  double wr_desired_ = 0.0;
   // Timers
   rclcpp::TimerBase::SharedPtr odom_timer_;
   rclcpp::TimerBase::SharedPtr joint_state_timer_;
