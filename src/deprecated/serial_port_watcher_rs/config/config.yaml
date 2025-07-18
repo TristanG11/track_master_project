@@ -1,0 +1,17 @@
+serial_port_watcher_rs:
+  ros__parameters:
+    topic_available_ports: "/available_serial_ports"
+    scan_interval_secs: 1
+    devices:
+      - alias: "esp32"
+        serial_number: "84746aa23c28ee11af9acd0af59e3369"
+        vid: 0x10c4
+        pid: 0xea60
+      - alias: "gnss"
+        serial_number: "D30JIZXO"
+        vid: 0x0403
+        pid: 0x6015
+      - alias: "lidar"
+        serial_number: "SNNNNNNNN"
+        vid: 0x1234
+        pid: 0x5678
