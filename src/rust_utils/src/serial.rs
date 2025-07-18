@@ -97,9 +97,10 @@ pub fn spawn_reconnection_thread(
                 Ok(port) => {
                     if let Some(mut port_guard) =current_port.try_lock_for(Duration::from_millis(100))  {
                         println!("Reconnexion réussie sur {}", current_port_name);
-                        disconnected_flag.store(false, Ordering::SeqCst);
+                        
                         *port_guard = Some(port);
-                    
+                        drop(port_guard);
+                        disconnected_flag.store(false, Ordering::SeqCst);
                     } else {
                         println!("Erreur : impossible de locker le port série pour mise à jour.");
                     }

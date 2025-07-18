@@ -389,6 +389,10 @@ name = "composition_interfaces"
 version = "2.0.2"
 
 [[patch.unused]]
+name = "esp32_serial_interface_rs"
+version = "0.1.0"
+
+[[patch.unused]]
 name = "example_interfaces"
 version = "0.12.0"
 
@@ -417,8 +421,16 @@ name = "logging_demo"
 version = "0.1.0"
 
 [[patch.unused]]
+name = "msg_utils"
+version = "0.0.0"
+
+[[patch.unused]]
 name = "nav_msgs"
 version = "5.3.6"
+
+[[patch.unused]]
+name = "nmea_gnss_rs"
+version = "0.1.0"
 
 [[patch.unused]]
 name = "parameter_demo"

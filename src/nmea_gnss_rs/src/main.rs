@@ -4,7 +4,7 @@ use map_3d::{geodetic2enu, Ellipsoid::WGS84};
 use msg_utils::msg::GpsVelocityHeading;
 use nmea_parser::{gnss::GgaQualityIndicator, NmeaParser, ParsedMessage};
 use parking_lot::FairMutex;
-use rclrs::MandatoryParameter;
+use rclrs::*;
 use rust_utils::serial::*;
 use sensor_msgs::msg::NavSatFix;
 use std::sync::atomic::AtomicBool;
@@ -14,8 +14,9 @@ use std::{
     time::Duration,
 };
 fn main() {
-    let context = rclrs::Context::new(std::env::args()).unwrap();
-    let node = rclrs::create_node(&context, "nmea_gnss_node_rs").unwrap();
+    let context = rclrs::Context::default_from_env().unwrap();
+    let mut executor = context.create_basic_executor();
+    let node = executor.create_node("nmea_gnss_node_rs").unwrap();
     let diag_name: &'static str = "nmea_gnss_node_rs";
 
     let baud_rate: MandatoryParameter<i64> = node
@@ -66,32 +67,39 @@ fn main() {
         .mandatory()
         .unwrap();
 
+    let binding = gnss_fix_topic.get();
+    let topic_name: &str = &binding.as_ref();
     let gnss_fix_pub = node
-        .create_publisher::<NavSatFix>(&gnss_fix_topic.get(), rclrs::QoSProfile::default())
-        .unwrap();
+        .create_publisher::<NavSatFix>(topic_name
+        .keep_last(5)
+        .transient_local()
+    ).unwrap();
+
+
+    let binding = heading_vel_topic.get();
+    let topic_name: &str = &binding.as_ref();          
     let heading_vel_pub = node
         .create_publisher::<GpsVelocityHeading>(
-            &heading_vel_topic.get(),
-            rclrs::QoSProfile::default(),
+            topic_name
+            .keep_last(5)
+            .transient_local()
         )
         .unwrap();
 
     let twist_pub = node
         .create_publisher::<TwistWithCovarianceStamped>(
-            &twist_topic.get(),
-            rclrs::QoSProfile::default(),
+            &twist_topic.get()
         )
         .unwrap();
 
     let pose_pub = node
         .create_publisher::<PoseWithCovarianceStamped>(
-            &pose_topic.get(),
-            rclrs::QoSProfile::default(),
+            &pose_topic.get()
         )
         .unwrap();
 
     let diag_publisher = node
-        .create_publisher::<DiagnosticArray>("/diagnostics", rclrs::QoSProfile::default())
+        .create_publisher::<DiagnosticArray>("/diagnostics")
         .unwrap();
 
     let mut pose_msg = PoseWithCovarianceStamped::default();
@@ -144,7 +152,7 @@ fn main() {
 
     let node = node.clone();
     let mut parser = NmeaParser::new();
-    let serial_port = serial_port.clone();
+
     move || {
         let disconnected_flag = disconnected_flag.clone();
         let diag_tx = diag_tx.clone();
@@ -286,5 +294,5 @@ fn main() {
     }
 });
 
-    rclrs::spin(node).unwrap();
+    executor.spin(SpinOptions::default());
 }
