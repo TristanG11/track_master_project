@@ -1,0 +1,3 @@
+float32 power_bqtt_voltage
+float32 logical_batt_voltage
+bool emergency_button_pressed
