@@ -31,22 +31,25 @@ def generate_launch_description():
 
     # Env var needs to be set
     # Lancer l'app npm
-    npm_app_path = os.environ.get('NPM_APP_PATH')
-    #npm_app_path = "/home/tristan/ros2_ws/src/robot_project/src/track_master_app"
-    npm_start_process = ExecuteProcess(
-        cmd=["npm", "start"],
-        cwd=npm_app_path,
-        shell=True,
-        output='screen'
-    )
+    # npm_app_path = os.environ.get('NPM_APP_PATH')
+    # if not npm_app_path:
+    #     raise RuntimeError("La variable d'environnement NPM_APP_PATH n'est pas définie")
 
-    # Lancer le websocket + npm app après 5s
-    delayed_app_launch = TimerAction(
-        period=5.0,
-        actions=[app_launch, npm_start_process]
-    )
+    # #npm_app_path = "/home/tristan/ros2_ws/src/robot_project/src/track_master_app"
+    # npm_start_process = ExecuteProcess(
+    #     cmd=["npm", "start"],
+    #     cwd=npm_app_path,
+    #     shell=True,
+    #     output='screen'
+    # )
+
+    # # Lancer le websocket + npm app après 5s
+    # delayed_app_launch = TimerAction(
+    #     period=5.0,
+    #     actions=[app_launch, npm_start_process]
+    # )
 
     return LaunchDescription([
         move_robot_real,
-        delayed_app_launch
+        app_launch
     ])
