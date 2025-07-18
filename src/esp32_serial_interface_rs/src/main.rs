@@ -2,7 +2,7 @@ use diagnostic_msgs::msg::{DiagnosticArray, DiagnosticStatus, KeyValue};
 use msg_utils::msg::FourMotorsPid;
 use msg_utils::msg::{FourMotorsFeedback, WheelCommands};
 use parking_lot::FairMutex;
-use rclrs::MandatoryParameter;
+use rclrs::*;
 use rust_utils::serial::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
@@ -14,11 +14,13 @@ enum MessageType {
     //Status(()),
     Problematic(()),
 }
-
+ 
+    
 fn main() {
     // Initialize the ROS 2 context
-    let context = rclrs::Context::new(std::env::args()).unwrap();
-    let node = rclrs::create_node(&context, "esp32_serial_interface_node").unwrap();
+    let context = rclrs::Context::default_from_env().unwrap();
+    let mut executor = context.create_basic_executor();
+    let node = executor.create_node("esp32_serial_interface_node").unwrap();
 
     // Parameters :
     let baud_rate: MandatoryParameter<i64> = node
@@ -38,17 +40,26 @@ fn main() {
         .default(Arc::from("/diagnostics"))
         .mandatory()
         .unwrap();
-
+   // let worker = node.create_worker(options)
     // Create publishers
+    let binding = topic_cmd_vel_feedback.get();
+    let topic_name: &str = &binding.as_ref();
     let feedback_publisher = node
         .create_publisher::<FourMotorsFeedback>(
-            &topic_cmd_vel_feedback.get(),
-            rclrs::QoSProfile::default(),
+            topic_name
+            .keep_last(10)
+            .transient_local()
         )
         .unwrap();
 
+    let binding = topic_diagnostics.get();
+    let topic_name: &str = &binding.as_ref();
     let diag_publisher = node
-        .create_publisher::<DiagnosticArray>(&topic_diagnostics.get(), rclrs::QoSProfile::default())
+        .create_publisher::<DiagnosticArray>(
+            topic_name
+            .keep_last(10)
+            .transient_local()
+        )
         .unwrap();
 
     let disconnected_flag = Arc::new(AtomicBool::new(true));
@@ -97,13 +108,14 @@ fn main() {
         diag_name.to_string(),
     );
 
+    //let worker = node.create_worker::<usize>(0);
     // Sender / receiver for serial_port_writing :
 
     let (cmd_tx, cmd_rx) = mpsc::channel::<String>();
 
     // Create a subscriber for the topic /cmd_vel_to_send
     let _cmd_vel_subscription = node
-        .create_subscription::<WheelCommands, _>("/cmd_vel_desired", rclrs::QOS_PROFILE_DEFAULT, {
+        .create_subscription::<WheelCommands, _>("/cmd_vel_desired", {
             let cmd_tx = cmd_tx.clone();
             let active_pid_update = active_pid_update.clone();
             move |msg: WheelCommands| {
@@ -125,7 +137,6 @@ fn main() {
 
     let _pid_subscription = node.create_subscription::<FourMotorsPid, _>(
     "/pid_gains",
-    rclrs::QOS_PROFILE_DEFAULT,
     {
         let active_pid_update = active_pid_update.clone();
         let cmd_tx = cmd_tx.clone();
@@ -279,7 +290,12 @@ fn main() {
                     }
                     if let Some(e) = serial_error {
                         if !disconnected_flag.load(Ordering::SeqCst) {
+                            {
+                                let mut guard = serial_port.lock();
+                                *guard = None;
+                           } 
                             handle_serial_error(e.into(), &diag_tx, diag_name, &disconnected_flag);
+                            break;
                         } else {
                             while !disconnected_flag.load(Ordering::SeqCst) {
                                 std::thread::sleep(Duration::from_secs(2));
@@ -356,7 +372,12 @@ fn main() {
                     // if there is an error
                     if let Some(e) = serial_error {
                         if !disconnected_flag.load(Ordering::SeqCst) {
+                           {
+                                let mut guard = serial_port.lock();
+                                *guard = None;
+                           } 
                             handle_serial_error(e.into(), &diag_tx, diag_name, &disconnected_flag);
+                            break;
                         } else {
                             while !disconnected_flag.load(Ordering::SeqCst) {
                                 std::thread::sleep(Duration::from_secs(2));
@@ -370,7 +391,8 @@ fn main() {
     };
 
     // Spin to keep the ROS 2 node active
-    rclrs::spin(node).unwrap();
+    executor.spin(SpinOptions::default());
+    //rclrs::spin(node).unwrap();
 }
 
 // Determine the type of message
