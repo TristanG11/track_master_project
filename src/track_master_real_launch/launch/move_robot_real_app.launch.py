@@ -10,7 +10,11 @@ from launch.launch_description_sources import AnyLaunchDescriptionSource
 def generate_launch_description():
     pkg_name_ctrl = 'track_master_control'
     pkg_websocket = 'rosbridge_server'
-
+    gnss_pkg = 'nmea_gnss_rs'
+    nano_pkg = 'arduino_nano_serial_interface_rs'
+    lidar_pkg = 'rplidar_ros'
+    imu_pkg = 'bno055_imu'
+    cam_pkg = 'camera_visualizer'
     # Inclure le launch du contrôle du robot
     move_robot_real = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -28,6 +32,50 @@ def generate_launch_description():
             )
         )
     )
+
+   # arduino interface 
+    arduino_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory(nano_pkg), 'launch', 'nano.launch.py'
+            )
+        )
+    )
+
+   # gnss pkg
+    gnss_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory(gnss_pkg), 'launch', 'nmea_gnss.launch.py'
+            )
+        )
+    )
+
+   # lidar launch 
+    lidar_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory(lidar_pkg), 'launch', 'rplidar_c1_launch.py'
+            )
+        )
+    )
+
+    imu_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory(imu_pkg), 'launch', 'imu.launch.py'
+            )
+        )
+    )
+
+    cam_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory(cam_pkg), 'launch', 'camera_viz.launch.py'
+            )
+        )
+    )
+
 
     # Env var needs to be set
     # Lancer l'app npm
@@ -51,5 +99,10 @@ def generate_launch_description():
 
     return LaunchDescription([
         move_robot_real,
-        app_launch
+        app_launch,
+        gnss_launch,
+        arduino_launch,
+        lidar_launch,
+        imu_launch,
+        cam_launch
     ])

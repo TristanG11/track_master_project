@@ -13,6 +13,6 @@ def generate_launch_description():
             executable='nmea_gnss_node',
             name='nmea_gnss_node',
             parameters=[config_file],
-            output='screen'
+            output='log'
         )
     ])

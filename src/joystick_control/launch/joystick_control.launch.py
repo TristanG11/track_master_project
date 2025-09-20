@@ -14,6 +14,7 @@ def generate_launch_description():
             package= 'joystick_control',
             executable='joystick_control_node',
             name='joystick_control_node',
-            parameters=[config_file]
+            parameters=[config_file],
+            output='screen'
         )
     ])
