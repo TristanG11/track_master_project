@@ -266,6 +266,7 @@ Il faut un subscriber pour le bouton d'arret d'urgence à mettre sur l'app
 
 
 pub fn parse_power_status(line: &str) -> Option<PowerStatus> {
+    println!("{}",line);
     let s = line.trim();
     // 1) On vérifie les chevrons
     if !s.starts_with('<') || !s.ends_with('>') {

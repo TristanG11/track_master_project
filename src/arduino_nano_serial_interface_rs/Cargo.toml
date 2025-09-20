@@ -11,9 +11,10 @@ diagnostic_msgs = "*"
 parking_lot = "0.12.3"
 rust_utils = {path = "../rust_utils"}
 std_msgs = "*"
+
 [[bin]]
 name = "arduino_nano_serial_interface_node"
 path = "src/main.rs"
 
 [package.metadata.ros]
-install_to_share = ["config"]
+install_to_share = ["config","launch"]
