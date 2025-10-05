@@ -124,6 +124,7 @@ const JoystickControl = () => {
       >
         <option value="app_joystick">App Joystick</option>
         <option value="ps4_controller">PS4 Controller</option>
+        <option value="test">test</option>
         <option value="voice_command">Voice Command</option>
       </select>
 
