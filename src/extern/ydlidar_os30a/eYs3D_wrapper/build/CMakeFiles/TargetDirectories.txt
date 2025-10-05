@@ -1,9 +1,0 @@
-/home/tristan/ros2_ws/src/ydlidar_os30a/eYs3D_wrapper/build/CMakeFiles/callback.test.dir
-/home/tristan/ros2_ws/src/ydlidar_os30a/eYs3D_wrapper/build/CMakeFiles/pipeline.test.dir
-/home/tristan/ros2_ws/src/ydlidar_os30a/eYs3D_wrapper/build/CMakeFiles/frameset_pipeline.test.dir
-/home/tristan/ros2_ws/src/ydlidar_os30a/eYs3D_wrapper/build/CMakeFiles/edit_cache.dir
-/home/tristan/ros2_ws/src/ydlidar_os30a/eYs3D_wrapper/build/CMakeFiles/rebuild_cache.dir
-/home/tristan/ros2_ws/src/ydlidar_os30a/eYs3D_wrapper/build/CMakeFiles/list_install_components.dir
-/home/tristan/ros2_ws/src/ydlidar_os30a/eYs3D_wrapper/build/CMakeFiles/install.dir
-/home/tristan/ros2_ws/src/ydlidar_os30a/eYs3D_wrapper/build/CMakeFiles/install/local.dir
-/home/tristan/ros2_ws/src/ydlidar_os30a/eYs3D_wrapper/build/CMakeFiles/install/strip.dir
