@@ -1,0 +1,73 @@
+    def detect_persons(self):
+        if self.color_image is None or self.depth_image is None:
+            return
+        if self.fx is None:
+            return  # Intrinsics non reçues
+
+        h_color, w_color = self.color_image.shape[:2]
+        h_depth, w_depth = self.depth_image.shape[:2]
+        # Détection avec YOLO
+        results = self.model(self.color_image)
+        person_detected = False
+
+        for det in results.xyxy[0]:  # x1, y1, x2, y2, conf, cls
+            x1, y1, x2, y2, conf, cls = det
+            if int(cls) != 0:  # 0 = person
+                continue
+
+            person_detected = True
+            x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
+
+            # Calcul du centre
+            cx = int((x1 + x2) / 2)
+            cy = int((y1 + y2) / 2)
+
+            # Ajuster si les résolutions diffèrent
+            cx_depth = int(cx * w_depth / w_color)
+            cy_depth = int(cy * h_depth / h_color)
+            cx_depth = np.clip(cx_depth, 0, w_depth - 1)
+            cy_depth = np.clip(cy_depth, 0, h_depth - 1)
+
+            # Profondeur moyenne autour du centre
+            """window_size = 5
+            x_start = max(cx_depth - window_size//2, 0)
+            x_end   = min(cx_depth + window_size//2 + 1, w_depth)
+            y_start = max(cy_depth - window_size//2, 0)
+            y_end   = min(cy_depth + window_size//2 + 1, h_depth)
+            depth_window = self.depth_image[y_start:y_end, x_start:x_end]
+            valid_depths = depth_window[depth_window > 0]
+                        
+            print(x_start)
+            print(x_end)
+            print(y_start)
+            print(y_end)
+
+            """
+            depth_raw = self.depth_image[cx_depth, cy_depth]
+            """if len(valid_depths) == 0:
+                depth_mm = 0.0
+            else:
+                depth_min = 200
+                depth_max = 2500"""
+
+            #depth_raw = #float(min(valid_depths))
+            #depth_mm = (depth_raw / 255.0) * (depth_max - depth_min) + depth_min
+            print(depth_raw)
+            #print(self.depth_image.shape, self.depth_image.dtype)
+
+            X, Y, Z = self.pixel_to_camera(cx_depth, cy_depth, depth_raw)
+            self.get_logger().info(f"Person detected: X={X:.2f}, Y={Y:.2f}, Z={Z:.2f}")
+
+            # Dessiner la bbox pour visualisation
+            cv2.rectangle(self.color_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(self.color_image, f"{Z:.2f} mm", (x1, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            
+        
+
+        if not person_detected:
+            self.get_logger().info("0 person detected")
+
+        # Affichage (facultatif)
+        cv2.imshow("Color Image", self.color_image)
+        cv2.waitKey(1)
