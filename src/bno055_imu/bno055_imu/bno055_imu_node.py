@@ -5,22 +5,31 @@ import adafruit_bno055
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Imu, Temperature
+import os 
+os.environ["TMPDIR"] = "/home/tristan/trackmasterbot"
+os.makedirs("/home/tristan/trackmasterbot", exist_ok=True)
 
 class BNO055Publisher(Node):
     def __init__(self):
+        print("Start IMU")
         super().__init__('bno055_imu_node')
         self.imu_pub = self.create_publisher(Imu, 'imu/data', 10)
         self.temp_pub = self.create_publisher(Temperature, 'imu/temperature', 10)
-        i2c = busio.I2C(board.SCL, board.SDA)
-        self.sensor = adafruit_bno055.BNO055_I2C(i2c)
-        # Appliquer les offsets de calibration
-        self.sensor.offsets_accelerometer = (-34, -15, -18)
-        self.sensor.offsets_gyroscope = (-1, 0, -1)
-        self.sensor.offsets_magnetometer = (293, -1039, -463)
-        self.sensor.radius_accelerometer = 1000
-        self.sensor.radius_magnetometer = 777
-        # Mode NDOF (fusion absolue)
-        self.sensor.mode = adafruit_bno055.NDOF_MODE
+        try: 
+            i2c = busio.I2C(board.SCL, board.SDA)
+            self.sensor = adafruit_bno055.BNO055_I2C(i2c)
+            # Appliquer les offsets de calibration
+            self.sensor.offsets_accelerometer = (-34, -15, -18)
+            self.sensor.offsets_gyroscope = (-1, 0, -1)
+            self.sensor.offsets_magnetometer = (293, -1039, -463)
+            self.sensor.radius_accelerometer = 1000
+            self.sensor.radius_magnetometer = 777
+            # Mode NDOF (fusion absolue)
+            self.sensor.mode = adafruit_bno055.NDOF_MODE
+        except Exception as e:
+            self.get_logger().error(f"Echec de l'initialisation I2C: {e}")
+            print("failed IMU launch")
+            #raise RuntimeError("Impossible d'initialiser le capteur BNO055 sur le bus I2C") from e
         self.timer = self.create_timer(0.1, self.publish_data)
 
     def publish_data(self):

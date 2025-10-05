@@ -83,7 +83,7 @@ class VoiceCommandNode(Node):
             return 
         """Publie la commande actuelle à 10 Hz."""
         self.publisher_.publish(self.current_command)
-        
+        #print("ppublished")
 
     def cmd_type_cb(self, msg):
         self.cmd_type = msg.data
