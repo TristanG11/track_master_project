@@ -134,6 +134,8 @@ private:
   double theta_ = 0.0;
   double wl_desired_ = 0.0;
   double wr_desired_ = 0.0;
+
+  double correction_factor_ = 1.0;
   // Timers
   rclcpp::TimerBase::SharedPtr odom_timer_;
   rclcpp::TimerBase::SharedPtr joint_state_timer_;

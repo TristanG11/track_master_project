@@ -6,6 +6,7 @@
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <algorithm>
+#include <cmath>
 
 /// Ramp between current and target by at most a_max * dt
 double ramp(double &current, double &target, double &a_max, double dt) {
@@ -118,6 +119,7 @@ bool TrackMasterController::initParams()
   declare_parameter<double>("pid_right.ki", 0.0);
   declare_parameter<double>("pid_right.kd", 0.1);
 
+  declare_parameter<double>("correction_factor", 1.0);
 
   update_rate_ = get_parameter("update_rate").as_double();
   publish_rate_ = get_parameter("publish_rate").as_double();
@@ -147,6 +149,7 @@ bool TrackMasterController::initParams()
   min_angular_velocity_ = get_parameter("min_angular_velocity").as_double();
   min_angular_acceleration_ = get_parameter("min_angular_acceleration").as_double();
 
+  correction_factor_ = get_parameter("correction_factor").as_double();
 
   pid_left_.kp_ = get_parameter("pid_left.kp").as_double();
   pid_left_.ki_ = get_parameter("pid_left.ki").as_double();
@@ -199,8 +202,14 @@ void TrackMasterController::feedbackCallback(const msg_utils::msg::FourMotorsFee
   prev_dr_ = dr;
 
   delta_s_ = (delta_dr_ + delta_dl_) / 2.0;
-  delta_theta_ = (delta_dr_ - delta_dl_) / wheel_separation_;
-  theta_ += delta_theta_;
+  delta_theta_ = (delta_dr_ - delta_dl_) / (wheel_separation_ * correction_factor_);
+  
+
+  // Normalisation de l'angle dans [-π, π]
+  while (theta_ > M_PI)  theta_ -= 2.0 * M_PI;
+  while (theta_ < -M_PI) theta_ += 2.0 * M_PI;
+
+  RCLCPP_INFO(this->get_logger(), "yaw_cont (deg)=%.3f", theta_);
 
   odom_msg_.header.stamp = get_clock()->now();
   odom_msg_.header.frame_id = odom_frame_id_;
@@ -213,14 +222,33 @@ void TrackMasterController::feedbackCallback(const msg_utils::msg::FourMotorsFee
   odom_msg_.pose.pose.position.x += delta_s_ * cos(theta_ + delta_theta_ / 2.0);
   odom_msg_.pose.pose.position.y += delta_s_ * sin(theta_ + delta_theta_ / 2.0);
 
+  theta_ += delta_theta_;
   tf2::Quaternion quat;
   quat.setRPY( 0, 0, theta_ );
   odom_msg_.pose.pose.orientation = tf2::toMsg(quat);
+
+  // Il faut la rendre dynamique
+  odom_msg_.pose.covariance = {
+    0.01, 0, 0, 0, 0, 0,
+    0, 0.01, 0, 0, 0, 0,
+    0, 0, 99999, 0, 0, 0,
+    0, 0, 0, 99999, 0, 0,
+    0, 0, 0, 0, 99999, 0,
+    0, 0, 0, 0, 0, 0.05
+  };
+
+  odom_msg_.twist.covariance = {
+    0.0025, 0, 0, 0, 0, 0,
+    0, 0.0025, 0, 0, 0, 0,
+    0, 0, 99999, 0, 0, 0,
+    0, 0, 0, 99999, 0, 0,
+    0, 0, 0, 0, 99999, 0,
+    0, 0, 0, 0, 0, 0.070
+  };
 }
 
 void TrackMasterController::publishOdometry()
 {
-
 
   odom_pub_->publish(odom_msg_);
 
@@ -234,7 +262,7 @@ void TrackMasterController::publishOdometry()
   odom_tf_.transform.translation.z = odom_msg_.pose.pose.position.z;
   odom_tf_.transform.rotation = odom_msg_.pose.pose.orientation;
 
-  tf_broadcaster_->sendTransform(odom_tf_);
+  //tf_broadcaster_->sendTransform(odom_tf_); do not pblish tf
 
 }
 

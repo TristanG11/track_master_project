@@ -32,6 +32,8 @@ track_master_controller:
     min_angular_velocity: -5.0
     min_angular_acceleration: -0.5
 
+    correction_factor: 1.4555556
+
     # PID global gauche
     pid_left:
       kp: 0.8
