@@ -12,6 +12,12 @@ find_package(rclpy REQUIRED)
 find_package(msg_utils REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/GetCmdType.srv"
+  DEPENDENCIES std_msgs
+)
 
 install(
   DIRECTORY ${PROJECT_NAME}
@@ -21,7 +27,7 @@ install(
 install(
   PROGRAMS
   ${PROJECT_NAME}/wheel_commands_debug.py
-  #${PROJECT_NAME}/data_recorder.py
+  ${PROJECT_NAME}/app_initializer.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
