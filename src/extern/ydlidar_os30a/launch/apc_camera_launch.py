@@ -259,5 +259,5 @@ def generate_launch_description():
     ld.add_action(PC_TF_node)
     ld.add_action(IMU_TF_node)
     ld.add_action(DM_TF_node)
-
+    ld.add_action(RVIZ_node)
     return ld
