@@ -7,6 +7,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(msg_utils REQUIRED)
@@ -18,17 +19,26 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetCmdType.srv"
   DEPENDENCIES std_msgs
 )
+if(NOT TARGET ament_cmake_python_symlink_${PROJECT_NAME})
+  ament_python_install_package(${PROJECT_NAME})
+endif()
 
-install(
-  DIRECTORY ${PROJECT_NAME}
-  DESTINATION lib/${PROJECT_NAME}
-)
+#install(
+#  DIRECTORY ${PROJECT_NAME}
+#  DESTINATION lib/${PROJECT_NAME}
+#)
 
 install(
   PROGRAMS
-  ${PROJECT_NAME}/wheel_commands_debug.py
-  ${PROJECT_NAME}/app_initializer.py
+    track_master_debug/app_initializer.py
   DESTINATION lib/${PROJECT_NAME}
 )
+install(
+  PROGRAMS
+    track_master_debug/wheel_commands_debug.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+ament_export_dependencies(rosidl_default_runtime)
 
 ament_package()
