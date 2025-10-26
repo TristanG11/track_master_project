@@ -15,6 +15,8 @@ def generate_launch_description():
     lidar_pkg = 'rplidar_ros'
     imu_pkg = 'bno055_imu'
     cam_pkg = 'camera_visualizer'
+    filter_pkg = 'robot_localization'
+    debug_pkg = 'track_master_debug'
     # Inclure le launch du contrôle du robot
     move_robot_real = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -76,6 +78,21 @@ def generate_launch_description():
         )
     )
 
+    filter_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory(filter_pkg), 'launch', 'ekf.launch.py'
+            )
+        )
+    )
+
+    initializer_node = Node(
+        package='track_master_debug',
+        executable='app_initializer.py',  # le nom exact installé dans lib/<pkg>/
+        name='app_initializer',
+        output='log'
+    )
+
 
     # Env var needs to be set
     # Lancer l'app npm
@@ -103,6 +120,8 @@ def generate_launch_description():
         gnss_launch,
         arduino_launch,
         lidar_launch,
-        imu_launch,
-        cam_launch
+        #imu_launch,
+        filter_launch,
+        initializer_node,
+        #cam_launch
     ])
