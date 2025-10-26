@@ -1638,3 +1638,7 @@ version = "2.5.0"
 [[patch.unused]]
 name = "worker_demo"
 version = "0.1.0"
+
+[[patch.unused]]
+name = "yolo_msgs"
+version = "4.3.1"
