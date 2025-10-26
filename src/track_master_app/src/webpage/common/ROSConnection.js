@@ -1,8 +1,8 @@
 import ROSLIB from "roslib"
 
-
+const urlBrigde =process.env.REACT_APP_ROSBRIDGE_URL;
 const ros = new ROSLIB.Ros({
-    url: "ws://localhost:9090",
+    url: urlBrigde,
 });
 
 

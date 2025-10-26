@@ -7,7 +7,8 @@ const JoystickControl = () => {
   const [joystickState, setJoystickState] = useState({ x: 0, y: 0 });
   const [linearSpeed, setLinearSpeed] = useState(0.0);
   const [angularSpeed, setAngularSpeed] = useState(0.0);
-  const [cmdType, setCmdType] = useState("app_joystick"); // Selected control type
+  const [cmdType, setCmdType] = useState(null); // Selected control type
+  const [loading, setLoading] = useState(true); //
 
   // Conversion parameters
   const maxLinearSpeed = 0.5;
@@ -54,19 +55,20 @@ const JoystickControl = () => {
   };
 
   // Publish the control type commands
-  const publishCmdType = (value) => {
+
     const cmdTypeTopic = new ROSLIB.Topic({
       ros: ros,
       name: "/cmd_type",
       messageType: "std_msgs/String",
     });
 
+  const publishCmdType = (value) => {
     const message = new ROSLIB.Message({
       data: value,
     });
 
     cmdTypeTopic.publish(message);
-    console.log(`Published /cmd_type: ${value}`);
+    //console.log(`Published /cmd_type: ${value}`);
   };
 
   const handleCmdTypeChange = (event) => {
@@ -74,6 +76,49 @@ const JoystickControl = () => {
     setCmdType(selectedType);
     publishCmdType(selectedType);
   };
+
+  useEffect(() => {
+
+    if (!cmdType) return;
+    const interval = setInterval(() => {
+     publishCmdType(cmdType);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cmdType]);
+
+  useEffect(() => {
+    const service = new ROSLIB.Service({
+      ros: ros,
+      name: "/app_initializer/get_cmd_type",
+      serviceType: "track_master_debug/srv/GetCmdType",
+    });
+
+    const request = new ROSLIB.ServiceRequest({});
+
+    service.callService( request, (result) =>{
+      console.log("Service /get_cmd_type result:", result);
+      if (result && result.cmd_type && result.cmd_type !== "")
+      {
+        setCmdType(result.cmd_type);
+      }
+      else {
+        setCmdType("app_joystick");
+      }
+      setLoading(false);
+      clearTimeout(timeout); 
+    });
+
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setCmdType("app_joystick");
+        setLoading(false);
+      }
+    }, 5000);
+
+  }, []);
+
+
+
 
   useEffect(() => {
     if (cmdType === "app_joystick") {
@@ -109,6 +154,9 @@ const JoystickControl = () => {
     }
   }, [joystickState, cmdType]); // Dependencies: joystickState, cmdType
 
+  if (loading || cmdType === null) {
+    return <p>Chargement du mode de commande...</p>;
+  }
   return (
     <div>
       <h2>Joystick Control</h2>
