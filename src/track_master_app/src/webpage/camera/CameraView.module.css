@@ -1,6 +1,0 @@
-.cameraContainer {
-  max-width: 400px; /* Define the maximum width for the LiDAR container */
-    height: 400px; /* Adjust the height automatically based on the content */
-    margin: 0px ; /* Center the container horizontally */
-}
-
