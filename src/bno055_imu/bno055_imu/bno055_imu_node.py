@@ -19,7 +19,7 @@ class BNO055Publisher(Node):
             i2c = busio.I2C(board.SCL, board.SDA)
             self.sensor = adafruit_bno055.BNO055_I2C(i2c)
             # Appliquer les offsets de calibration
-            self.sensor.offsets_accelerometer = (-34, -15, -18)
+            self.sensor.offsets_accelerometer = (-34, -20, -35)
             self.sensor.offsets_gyroscope = (-1, 0, -1)
             self.sensor.offsets_magnetometer = (293, -1039, -463)
             self.sensor.radius_accelerometer = 1000
@@ -44,7 +44,7 @@ class BNO055Publisher(Node):
             imu_msg.orientation.y = quat[1]
             imu_msg.orientation.z = quat[2]
             imu_msg.orientation.w = quat[3]
-            imu_msg.orientation_covariance = [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01]
+            imu_msg.orientation_covariance = [0.0003, 0, 0, 0, 0.0003, 0, 0, 0, 0.0003]
         else:
             imu_msg.orientation_covariance = [-1.0]*9
 
@@ -54,7 +54,7 @@ class BNO055Publisher(Node):
             imu_msg.angular_velocity.x = ang_vel[0]
             imu_msg.angular_velocity.y = ang_vel[1]
             imu_msg.angular_velocity.z = ang_vel[2]
-            imu_msg.angular_velocity_covariance = [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01]
+            imu_msg.angular_velocity_covariance = [0.0027, 0, 0, 0, 0.0027, 0, 0, 0, 0.0027]
         else:
             imu_msg.angular_velocity_covariance = [-1.0]*9
 
@@ -64,7 +64,7 @@ class BNO055Publisher(Node):
             imu_msg.linear_acceleration.x = lin_accel[0]
             imu_msg.linear_acceleration.y = lin_accel[1]
             imu_msg.linear_acceleration.z = lin_accel[2]
-            imu_msg.linear_acceleration_covariance = [0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1]
+            imu_msg.linear_acceleration_covariance = [0.0036, 0, 0, 0, 0.0036, 0, 0, 0,0.0036]
         else:
             imu_msg.linear_acceleration_covariance = [-1.0]*9
 
